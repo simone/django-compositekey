@@ -38,8 +38,6 @@ def _update_filter_from(model, kwargs, pk="pk"):
 
 
 
-
-
 class CompositeQuerySet(QuerySet):
 
     def __init__(self, model=None, query=None, using=None):

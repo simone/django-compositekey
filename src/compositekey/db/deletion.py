@@ -9,10 +9,10 @@ from django.db.models.sql.where import AND, Constraint
 
 __author__ = 'aldaran'
 
-def decore_delete_batch(original_delete_batch):
-    from compositekey.db.fields import MultipleFieldPrimaryKey
-    from compositekey.db.fields import disassemble_pk
-    
+def wrap_delete_batch(original_delete_batch):
+    from compositekey.utils import disassemble_pk
+    from compositekey import db
+
     def delete_batch(obj, pk_list, using, field=None):
         """
         Set up and execute delete queries for all the objects in pk_list.
@@ -24,7 +24,7 @@ def decore_delete_batch(original_delete_batch):
             field = obj.model._meta.pk
 
         # original batch delete iof not composite
-        if not isinstance(field, MultipleFieldPrimaryKey):
+        if not isinstance(field, db.MultipleFieldPrimaryKey):
             return original_delete_batch(obj, pk_list, using, field=field)
 
         # composite PK fields
@@ -51,4 +51,4 @@ def activate_delete_monkey_path():
     # monkey patch
     if not hasattr(DeleteQuery.delete_batch, "_sign"):
         print "activate_delete_monkey_path"
-        DeleteQuery.delete_batch = decore_delete_batch(DeleteQuery.delete_batch)
+        DeleteQuery.delete_batch = wrap_delete_batch(DeleteQuery.delete_batch)
