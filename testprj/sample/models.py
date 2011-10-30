@@ -1,7 +1,9 @@
-from django.db import models
+__author__ = 'aldaran'
 
-# Create your models here.
+from django.db import models
 from compositekey import db
+
+__all__ = ["Book", "Chapter"]
 
 class Book(models.Model):
     key = db.MultipleFieldPrimaryKey(fields=["author", "name"])

@@ -1,28 +1,16 @@
-from compositekey.utils import disassemble_pk, assemble_pk
+__author__ = 'aldaran'
+
+from django import forms
+from django.utils.translation import ugettext_lazy as _
+from django.db.models.fields import Field
+from django.db.models.fields.related import ForeignKey, ManyToOneRel
+
+from compositekey.utils import *
 from compositekey.db.deletion import activate_delete_monkey_path
 from compositekey.forms.models import activate_modelform_monkey_path
 
-__author__ = 'aldaran'
 
-from django.db import connection, router
-from django.db.models.query_utils import QueryWrapper
-from django.conf import settings
-from django import forms
-from django.core import exceptions, validators
-from django.utils.datastructures import DictWrapper
-from django.utils.functional import curry
-from django.utils.text import capfirst
-from django.utils.translation import ugettext_lazy as _
-from django.utils.encoding import smart_unicode, force_unicode, smart_str
-from django.utils.ipv6 import clean_ipv6_address
-
-from django.db.models.fields import Field, IntegerField, PositiveSmallIntegerField, PositiveIntegerField, AutoField, FieldDoesNotExist
-from django.db.models.fields.related import ForeignKey, ManyToOneRel, RelatedField, CASCADE, ForeignRelatedObjectsDescriptor, \
-    ReverseSingleRelatedObjectDescriptor, RECURSIVE_RELATIONSHIP_CONSTANT
-
-
-
-__all__ = ['MultipleFieldPrimaryKey', 'disassemble_pk', 'assemble_pk']
+__all__ = ['MultipleFieldPrimaryKey', 'CompositeForeignKey']
 
 
 def _get_field(opts, name):
@@ -81,7 +69,22 @@ def wrap_save_model(original_save):
 
 def wrap_init_model(original_init):
     def __init__(obj, *args, **kwargs):
+        opts = obj._meta
+
+        post_actions = []
+        if getattr(opts, "has_composite_primarykeys_field", False) and kwargs.has_key(opts.composite_primarykeys_field.name):
+            pk = kwargs.pop(opts.composite_primarykeys_field.name)
+            post_actions.append(lambda : setattr(obj, opts.composite_primarykeys_field.name, pk))
+            
+        if getattr(opts, "has_composite_foreignkeys_field", False):
+            for name in opts.composite_foreignkeys_fields.keys():
+                if kwargs.has_key(name):
+                    val = kwargs.pop(name)
+                    post_actions.append(lambda : setattr(obj, name, val))
+
         original_init(obj, *args, **kwargs)
+
+        for action in post_actions: action()
         # setup pk cache
         obj.pk
     return __init__

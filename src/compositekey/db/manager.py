@@ -1,8 +1,9 @@
-from compositekey.db.queryset import EmptyCompositeQuerySet, CompositeQuerySet, CompositeRawQuerySet
-
 __author__ = 'aldaran'
 
 from django.db.models.manager import Manager
+from compositekey.db.queryset import *
+
+__all__ = ["CompositeDefaultManager"]
 
 class CompositeDefaultManager(Manager):
     use_for_related_fields = True

@@ -1,30 +1,13 @@
-from django import forms
-from django.forms.models import modelform_factory
-
 __author__ = 'aldaran'
 
 from django.contrib.admin import site, ModelAdmin
-
 from sample.models import Book, Chapter
 
+class BookAdmin(ModelAdmin):
+    list_filter = ("name", "author",)
 
-class MyAdmin(ModelAdmin):
+class ChapterAdmin(ModelAdmin):
+    list_filter = ("book_name", "book_author",)
 
-    def get_form(self, request, obj=None, **kwargs):
-        """
-        no non mi piace intervenire qui.... bisogna lavorare sulla modelform_factory
-        monkey patch credo :-)
-        """
-        Form = super(MyAdmin, self).get_form(request, obj=obj, **kwargs)
-        #class CompositeForm(Form):
-        #    book = forms.ModelChoiceField(None)
-
-        return modelform_factory(self.model, form=Form)
-
-    def queryset(self, request):
-        print self.model, self.model._default_manager
-        return super(MyAdmin, self).queryset(request)
-
-
-site.register(Book, MyAdmin)
-site.register(Chapter, MyAdmin)
+site.register(Book, BookAdmin)
+site.register(Chapter, ChapterAdmin)

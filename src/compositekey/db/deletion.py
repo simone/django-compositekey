@@ -1,13 +1,11 @@
+__author__ = 'aldaran'
+
 from django.db.models.sql.subqueries import DeleteQuery
 
-from django.core.exceptions import FieldError
-from django.db.models.fields import DateField, FieldDoesNotExist
 from django.db.models.sql.constants import *
-from django.db.models.sql.datastructures import Date
-from django.db.models.sql.query import Query
 from django.db.models.sql.where import AND, Constraint
 
-__author__ = 'aldaran'
+__all__ =["activate_delete_monkey_path"]
 
 def wrap_delete_batch(original_delete_batch):
     from compositekey.utils import disassemble_pk

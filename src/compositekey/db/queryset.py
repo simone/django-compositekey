@@ -1,17 +1,11 @@
-from django.db.models.query import EmptyQuerySet, QuerySet, RawQuerySet
-from django.db.models.sql import query
 
-from compositekey.db.fields import MultipleFieldPrimaryKey, disassemble_pk
 
 __author__ = 'aldaran'
 
+from django.db.models.query import EmptyQuerySet, QuerySet, RawQuerySet
+from compositekey.utils import disassemble_pk
+
 __all__ = ["EmptyCompositeQuerySet", "CompositeQuerySet", "CompositeRawQuerySet"]
-
-#class CompositeSQLQuery(query.Query):
-#    pass
-
-class EmptyCompositeQuerySet(EmptyQuerySet):
-    pass
 
 def _update_filter_from(model, kwargs, pk="pk"):
     # todo optimize - invert.. for each kwargs... check "nou use pop"
@@ -35,22 +29,46 @@ def _update_filter_from(model, kwargs, pk="pk"):
         if values and len(values) > 0:
             kwargs.update(zip(["%s__%s" % (key, op) for key in keys], zip(*[disassemble_pk(value) for value in values])))
 
+def _post_actions_composite_query(model, kwargs, name):
+    value = kwargs.pop(name)
+    print "skip (NOT YET IMPLEMETED) - join with composite key [the results are WRONG :-)]", model, kwargs, name, value
+    return lambda query : query
 
-
-
-class CompositeQuerySet(QuerySet):
+class _HackQuerySet(object):
 
     def __init__(self, model=None, query=None, using=None):
-        super(CompositeQuerySet, self).__init__(model=model, query=query, using=using)
+        super(_HackQuerySet, self).__init__(model=model, query=query, using=using)
         #self.query.__class__ = CompositeSQLQuery
 
     def _filter_or_exclude(self, negate, *args, **kwargs):
+        opts=self.model._meta
         # need to unpack pk or keyname of composite key in values
-        if getattr(self.model._meta, "has_composite_primarykeys_field", False):
+        if getattr(opts, "has_composite_primarykeys_field", False):
             _update_filter_from(self.model, kwargs)
-            _update_filter_from(self.model, kwargs, pk=self.model._meta.pk.attname)
-        print "update filters...", kwargs
-        return super(CompositeQuerySet, self)._filter_or_exclude(negate, *args, **kwargs)
+            _update_filter_from(self.model, kwargs, pk=opts.pk.attname)
 
-class CompositeRawQuerySet(RawQuerySet):
+        post_actions = []
+        if getattr(opts, "has_composite_foreignkeys_field", False):
+            for name in opts.composite_foreignkeys_fields.keys():
+                for key in kwargs.keys():
+                    if key == name or key.startswith("%s__" % name):
+                        post_actions.append(_post_actions_composite_query(self.model, kwargs, key))
+
+        print "update filters...", kwargs
+
+        query = super(_HackQuerySet, self)._filter_or_exclude(negate, *args, **kwargs)
+
+        for call in post_actions:
+            query = call(query)
+        return query
+
+
+
+class CompositeQuerySet(_HackQuerySet, QuerySet):
+    pass
+
+class CompositeRawQuerySet(_HackQuerySet, RawQuerySet):
+    pass
+
+class EmptyCompositeQuerySet(_HackQuerySet, EmptyQuerySet):
     pass

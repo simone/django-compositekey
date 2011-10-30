@@ -1,13 +1,9 @@
-from django.forms.models import ModelForm
+__author__ = 'aldaran'
+
 from django.forms import models as module
 from django.utils.datastructures import SortedDict
 
-__author__ = 'aldaran'
-
-
-#class CompositeModelForm(ModelForm):
-#    pass
-
+__all__ = ["activate_modelform_monkey_path"]
 
 def wrap_construct_instance(original_construct_instance):
     def construct_instance(form, instance, fields=None, exclude=None):
