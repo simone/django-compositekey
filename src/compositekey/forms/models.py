@@ -8,7 +8,7 @@ __all__ = ["activate_modelform_monkey_path"]
 def wrap_construct_instance(original_construct_instance):
     def construct_instance(form, instance, fields=None, exclude=None):
         opts = instance._meta
-        if not getattr(opts, "has_composite_foreignkeys_field", False):
+        if not getattr(opts, "has_composite_foreignkeys_field", getattr(opts, "has_composite_primarykeys_field", False)):
             return original_construct_instance(form, instance, fields=fields, exclude=exclude)
 
         # todo: maybe is possible don't rewrite all function
@@ -16,7 +16,7 @@ def wrap_construct_instance(original_construct_instance):
         cleaned_data = form.cleaned_data
         file_field_list = []
         # hack added composite_foreignkeys_fields
-        for f in opts.fields + opts.composite_foreignkeys_fields.values():
+        for f in opts.fields + opts.composite_special_fields:
             if not f.editable or isinstance(f, models.AutoField) \
                     or not f.name in cleaned_data:
                 continue
@@ -41,7 +41,7 @@ def wrap_construct_instance(original_construct_instance):
 def wrap_model_to_dict(original_model_to_dict):
     def model_to_dict(instance, fields=None, exclude=None):
         opts = instance._meta
-        if not getattr(opts, "has_composite_foreignkeys_field", False):
+        if not getattr(opts, "has_composite_foreignkeys_field", getattr(opts, "has_composite_primarykeys_field", False)):
             return original_model_to_dict(instance, fields=fields, exclude=exclude)
         # todo: maybe is possible don't rewrite all function
 
@@ -49,7 +49,7 @@ def wrap_model_to_dict(original_model_to_dict):
         from django.db.models.fields.related import ManyToManyField
         data = {}
         # hack added composite_foreignkeys_fields
-        for f in opts.fields + opts.many_to_many + opts.composite_foreignkeys_fields.values():
+        for f in opts.fields + opts.many_to_many + opts.composite_special_fields:
             if not f.editable:
                 continue
             if fields and not f.name in fields:
@@ -76,14 +76,14 @@ def wrap_fields_for_model(original_fields_for_model):
     def fields_for_model(model, fields=None, exclude=None, widgets=None, formfield_callback=None):
         opts = model._meta
 
-        if not getattr(opts, "has_composite_foreignkeys_field", False):
+        if not getattr(opts, "has_composite_foreignkeys_field", getattr(opts, "has_composite_primarykeys_field", False)):
             return original_fields_for_model(model, fields=fields, exclude=fields, widgets=fields, formfield_callback=fields)
 
         # todo: maybe is possible don't rewrite all function
         field_list = []
         ignored = []
         # hack added composite_foreignkeys_fields
-        for f in sorted(opts.fields + opts.many_to_many + opts.composite_foreignkeys_fields.values()):
+        for f in sorted(opts.fields + opts.many_to_many + opts.composite_special_fields):
             if not f.editable:
                 continue
             if fields is not None and not f.name in fields:
@@ -117,6 +117,46 @@ def wrap_fields_for_model(original_fields_for_model):
     fields_for_model._sign = "composite modelform_monkey_path"
     return fields_for_model
 
+
+def wrap_get_foreign_key(original_get_foreign_key):
+    def _get_foreign_key(parent_model, model, fk_name=None, can_fail=False):
+        opts = model._meta
+
+        if not getattr(opts, "has_composite_foreignkeys_field", getattr(opts, "has_composite_primarykeys_field", False)):
+            return original_get_foreign_key(parent_model, model, fk_name=fk_name, can_fail=can_fail)
+
+        # avoid circular import
+        from django.db.models import ForeignKey
+        if fk_name:
+            fks_to_parent = [f for f in opts.fields+opts.composite_special_fields if f.name == fk_name]
+            if len(fks_to_parent) == 1:
+                fk = fks_to_parent[0]
+                if not isinstance(fk, ForeignKey) or \
+                        (fk.rel.to != parent_model and
+                         fk.rel.to not in parent_model._meta.get_parent_list()):
+                    raise Exception("fk_name '%s' is not a ForeignKey to %s" % (fk_name, parent_model))
+            elif len(fks_to_parent) == 0:
+                raise Exception("%s has no field named '%s'" % (model, fk_name))
+        else:
+            # Try to discover what the ForeignKey from model to parent_model is
+            fks_to_parent = [
+                f for f in opts.fields+opts.composite_special_fields
+                if isinstance(f, ForeignKey)
+                and (f.rel.to == parent_model
+                    or f.rel.to in parent_model._meta.get_parent_list())
+            ]
+            if len(fks_to_parent) == 1:
+                fk = fks_to_parent[0]
+            elif len(fks_to_parent) == 0:
+                if can_fail:
+                    return
+                raise Exception("%s has no ForeignKey to %s" % (model, parent_model))
+            else:
+                raise Exception("%s has more than 1 ForeignKey to %s" % (model, parent_model))
+        return fk
+    _get_foreign_key._sign = "composite modelform_monkey_path"
+    return _get_foreign_key
+
 def activate_modelform_monkey_path():
     # monkey patch
     if not hasattr(module.fields_for_model, "_sign"):
@@ -124,3 +164,4 @@ def activate_modelform_monkey_path():
         setattr(module, "fields_for_model", wrap_fields_for_model(module.fields_for_model))
         setattr(module, "model_to_dict", wrap_model_to_dict(module.model_to_dict))
         setattr(module, "construct_instance", wrap_construct_instance(module.construct_instance))
+        setattr(module, "_get_foreign_key", wrap_get_foreign_key(module._get_foreign_key))

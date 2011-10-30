@@ -1,13 +1,19 @@
 __author__ = 'aldaran'
 
-from django.contrib.admin import site, ModelAdmin
+from django.contrib import admin
 from sample.models import Book, Chapter
 
-class BookAdmin(ModelAdmin):
+class ChapterAdmin(admin.ModelAdmin):
+    list_filter = ("book_name", "_author",)
+
+class ChapterInline(admin.TabularInline):
+    model = Chapter
+
+class BookAdmin(admin.ModelAdmin):
     list_filter = ("name", "author",)
+    inlines = [
+        ChapterInline,
+    ]
 
-class ChapterAdmin(ModelAdmin):
-    list_filter = ("book_name", "book_author",)
-
-site.register(Book, BookAdmin)
-site.register(Chapter, ChapterAdmin)
+admin.site.register(Book, BookAdmin)
+admin.site.register(Chapter, ChapterAdmin)

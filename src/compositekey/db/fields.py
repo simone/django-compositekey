@@ -15,16 +15,28 @@ __all__ = ['MultipleFieldPrimaryKey', 'CompositeForeignKey']
 
 def _get_field(opts, name):
     if getattr(opts, "has_composite_primarykeys_field", False) and opts.composite_primarykeys_field.name == name:
-        return opts.composite_primarykeys_field
+        return (opts.composite_primarykeys_field, None, True, False)
     if getattr(opts, "has_composite_foreignkeys_field", False) and opts.composite_foreignkeys_fields.has_key(name):
-        return opts.composite_foreignkeys_fields.get(name)
+        return (opts.composite_foreignkeys_fields.get(name), None, True, False)
     return None
 
 
-def wrap_get_field(opts, original_get_field):
-    def get_field(name, many_to_many=True):
-        return _get_field(opts, name) or original_get_field(name, many_to_many=many_to_many)
-    return get_field
+def wrap_meta_prepare(opts, original_prepare):
+    if hasattr(original_prepare, "_sign"):
+        return original_prepare
+
+    opts._lazy_prepare_field_actions = []
+    def _prepare(model):
+        for prepare_action in getattr(opts, "_lazy_prepare_field_actions", []): prepare_action()
+        original_prepare(model)
+    _prepare._sign = "composite"
+    return _prepare
+
+#def wrap_get_field(opts, original_get_field):
+#    def get_field(name, many_to_many=True):
+#        f = _get_field(opts, name)
+#        return f[0] if f else original_get_field(name, many_to_many=many_to_many)
+#    return get_field
 
 def wrap_get_field_by_name(opts, original_get_field_by_name):
     def get_field_by_name(name):
@@ -137,37 +149,54 @@ class MultipleFieldPrimaryKey(Field):
         cls.add_to_class('_base_manager', manager)
         cls.add_to_class('_default_manager', manager)
 
+        cls._meta._prepare = wrap_meta_prepare(cls._meta, cls._meta._prepare)
         super(MultipleFieldPrimaryKey, self).contribute_to_class(cls, name)
         cls._meta.has_composite_primarykeys_field = True
         cls._meta.composite_primarykeys_field = self
+        cls._meta.composite_special_fields = getattr(cls._meta, "composite_special_fields", [])
 
         # needs to remove esplicit from fields (really is not a field)
         cls._meta.local_fields.remove(self)
         cls._meta.add_virtual_field(self)
-        
+        cls._meta.composite_special_fields.append(self)
+
         # todo: patch cls._meta.get_field for RELATED
-        cls._meta.get_field = wrap_get_field(cls._meta, cls._meta.get_field)
+        #cls._meta.get_field = wrap_get_field(cls._meta, cls._meta.get_field)
         #cls._meta.get_field_by_name = wrap_get_field_by_name(cls._meta, cls._meta.get_field_by_name)
         cls._meta.composite_get_field_by_name = wrap_get_field_by_name(cls._meta, cls._meta.get_field_by_name)
 
-        # get/set PK propery
-        setattr(cls, cls._meta.pk.attname, property(_get_composite_pk(self.get_key_fields()), _set_composite_pk(self.get_key_fields())))
         cls.save = wrap_save_model(cls.save) # adding reset PK cache
         cls.__init__ = wrap_init_model(cls.__init__) # adding reset PK cache
 
-        # TODO: better add primary key = () and not unique
-        # example: PRIMARY KEY (album, disk, posn)
-        cls._meta.unique_together.append([f.name for f in self.get_key_fields()])
-        for field in self.get_key_fields():
-            field.db_index=True
-
         activate_delete_monkey_path()
 
+        def lazy_init():
+            fields = self.get_key_fields()
+            names = [f.name for f in fields]
+            cls._meta.ordering = cls._meta.ordering or names
+
+            # TODO: better add primary key = () and not unique
+            # example: PRIMARY KEY (album, disk, posn)
+
+            cls._meta.unique_together.append(names)
+            for field in fields: field.db_index=True
+
+            # get/set PK propery
+            setattr(cls, cls._meta.pk.attname, property(_get_composite_pk(fields), _set_composite_pk(fields)))
+
+        cls._meta._lazy_prepare_field_actions.append(lazy_init)
+
     def formfield(self, **kwargs):
-        return forms.Field()
+        return None
 
     def get_key_fields(self):
-        return [self.model._meta.composite_get_field_by_name(name)[0] for name in self._field_names]
+        fields = []
+        for f in [self.model._meta.composite_get_field_by_name(name)[0] for name in self._field_names]:
+            if isinstance(f, CompositeForeignKey):
+                fields += [nf for nf in f.fields]
+            else:
+                fields.append(f)
+        return fields
 
 class CompositeManyToOneRel(ManyToOneRel):
     def get_related_field(self):
@@ -227,18 +256,28 @@ class CompositeForeignKey(ForeignKey):
         cls.add_to_class('_base_manager', manager)
         cls.add_to_class('_default_manager', manager)
 
+        cls._meta._prepare = wrap_meta_prepare(cls._meta, cls._meta._prepare)
         super(CompositeForeignKey, self).contribute_to_class(cls, name)
 
         cls._meta.has_composite_foreignkeys_field = True
         cls._meta.composite_foreignkeys_fields = getattr(cls._meta, "composite_foreignkeys_fields", {})
         cls._meta.composite_foreignkeys_fields[name]=self
+        cls._meta.composite_special_fields = getattr(cls._meta, "composite_special_fields", [])
 
+
+        # needs to remove esplicit from fields (really is not a field)
+        cls._meta.local_fields.remove(self)
+        cls._meta.add_virtual_field(self)
+        cls._meta.composite_special_fields.append(self)
+
+        activate_modelform_monkey_path()
         related_field = self.rel.get_related_field()
 
         # add the real composition fields
         new_fields = [prepare_hidden_key_field(cls, f, self.fields_ext, prefix=name) for f in related_field.get_key_fields()]
-        for f in new_fields:
-            cls.add_to_class(f.name, f)
+        for f in new_fields: cls.add_to_class(f.name, f)
+        self.fields = new_fields
+
 
         # hack to say to DB query to retrieve a real column
         #self.column = new_fields[1].column
@@ -250,11 +289,6 @@ class CompositeForeignKey(ForeignKey):
         reverse_desc = getattr(cls, name)
         reverse_desc.__set__ = wrap_setter(reverse_desc.__set__, name, new_fields)
 
-        # needs to remove esplicit from fields (really is not a field)
-        cls._meta.local_fields.remove(self)
-        cls._meta.add_virtual_field(self)
-
-        activate_modelform_monkey_path()
 
     def contribute_to_related_class(self, cls, related):
         super(CompositeForeignKey, self).contribute_to_related_class(cls, related)

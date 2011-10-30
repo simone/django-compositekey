@@ -41,6 +41,7 @@ class _HackQuerySet(object):
         #self.query.__class__ = CompositeSQLQuery
 
     def _filter_or_exclude(self, negate, *args, **kwargs):
+
         opts=self.model._meta
         # need to unpack pk or keyname of composite key in values
         if getattr(opts, "has_composite_primarykeys_field", False):
@@ -54,8 +55,7 @@ class _HackQuerySet(object):
                     if key == name or key.startswith("%s__" % name):
                         post_actions.append(_post_actions_composite_query(self.model, kwargs, key))
 
-        print "update filters...", kwargs
-
+        print self.model, "update filters...", args, kwargs
         query = super(_HackQuerySet, self)._filter_or_exclude(negate, *args, **kwargs)
 
         for call in post_actions:

@@ -6,7 +6,7 @@ from compositekey import db
 __all__ = ["Book", "Chapter"]
 
 class Book(models.Model):
-    key = db.MultipleFieldPrimaryKey(fields=["author", "name"])
+    id = db.MultipleFieldPrimaryKey(fields=["author", "name"])
     name = models.CharField(max_length=100)
     author = models.CharField(max_length=100)
 
@@ -16,17 +16,20 @@ class Book(models.Model):
         return u"%s (by %s)" % (self.name, self.author)
 
 class Chapter(models.Model):
-    key = db.MultipleFieldPrimaryKey(fields=["number", "title"])
-    book = db.CompositeForeignKey(Book, to_field="key", fields_ext={
-            "author": {"db_column" :"b_author"},
+    id = db.MultipleFieldPrimaryKey(fields=["book", "number"])
+    book = db.CompositeForeignKey(Book, to_field="id", fields_ext={
+            "author": {"db_column" :"b_author", "name" : "_author"},
             "name"  : {"db_column" :"b_name"},
     })
     number = models.PositiveSmallIntegerField()
     title = models.CharField(max_length=100)
 
     objects = db.CompositeDefaultManager()
-    
+
+#    class Meta:
+#        ordering = ["book_name",]
+
     def __unicode__(self):
-        return u"* %s ) %s" % (self.number, self.book_name)
+        return u"%s (%s) %s" % (self.book_name, self.number, self._author)
 
 
