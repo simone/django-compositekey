@@ -55,5 +55,6 @@ class ModelTest(TestCase):
         chapter.save()
         chapter.book.chapter_set.all()
 
-
+    def test_create_biografy(self):
+        Biografy.objects.create(book=Book.objects.get_or_create(author="Bio", name="Grafy")[0], text="test...")
 

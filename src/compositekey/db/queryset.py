@@ -1,4 +1,4 @@
-
+from compositekey.db.models.sql.query import CompositeQuery
 
 __author__ = 'aldaran'
 
@@ -38,7 +38,8 @@ class _HackQuerySet(object):
 
     def __init__(self, model=None, query=None, using=None):
         super(_HackQuerySet, self).__init__(model=model, query=query, using=using)
-        #self.query.__class__ = CompositeSQLQuery
+        # hack to use a composite query
+        self.query.__class__ = CompositeQuery
 
     def _filter_or_exclude(self, negate, *args, **kwargs):
 
