@@ -2,9 +2,9 @@ __author__ = 'fabio'
 
 from django.conf import settings
 
-__all__ = ["assemble_pk", "disassemble_pk", "SEP", "ESCAPE_CHAR"]
+__all__ = ["assemble_pk", "disassemble_pk", "SEP", "ESCAPE_CHAR", "NONE_CHAR"]
 
-SEP, ESCAPE_CHAR, NONE_CHAR  = getattr(settings, "COMPOSITE_PK_SEPARATOR_ESCAPE", '-.N')
+SEP, ESCAPE_CHAR, NONE_CHAR = getattr(settings, "COMPOSITE_PK_SEPARATOR_ESCAPE", '-.N')
 
 def assemble_pk(*values):
     result = ''
