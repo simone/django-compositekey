@@ -31,19 +31,20 @@ def wrap_get_from_clause(ori_filter_or_exclude):
 
     def _filter_or_exclude(self, negate, *args, **kwargs):
         opts=self.model._meta
-        # need to unpack pk or keyname of composite key in values
-        if getattr(opts, "has_composite_primarykeys_field", False):
-            fields = self.model._meta.composite_primarykeys_field.get_key_fields()
-            _update_filter_from(fields, kwargs)
-            _update_filter_from(fields, kwargs, pk=opts.pk.attname)
+        if getattr(opts, "enable_composite", False):
+            # need to unpack pk or keyname of composite key in values
+            if getattr(opts, "has_composite_primarykeys_field", False):
+                fields = self.model._meta.composite_primarykeys_field.get_key_fields()
+                _update_filter_from(fields, kwargs)
+                _update_filter_from(fields, kwargs, pk=opts.pk.attname)
 
-        if getattr(opts, "has_composite_foreignkeys_field", False):
-            for name in opts.composite_foreignkeys_fields.keys():
-                for key in kwargs.keys():
-                    if key == name or key.startswith("%s__" % name):
-                        _update_filter_from(opts.composite_foreignkeys_fields[name].fields, kwargs, pk=name)
-
-        print "updated filters...", self.model, args, kwargs
+            if getattr(opts, "has_composite_foreignkeys_field", False):
+                for name in opts.composite_foreignkeys_fields.keys():
+                    for key in kwargs.keys():
+                        if key == name or key.startswith("%s__" % name):
+                            _update_filter_from(opts.composite_foreignkeys_fields[name].fields, kwargs, pk=name)
+    
+            print "updated filters...", self.model, args, kwargs
         return ori_filter_or_exclude(self, negate, *args, **kwargs)
 
     _filter_or_exclude._sign = "activate_queryset_monkey_patch"

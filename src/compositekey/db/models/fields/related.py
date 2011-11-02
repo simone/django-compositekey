@@ -17,8 +17,8 @@ def wrap_fk_monkey_patch(ori_init, ori_contribute_to_class):
         opts = cls._meta
         ori_contribute_to_class(self, cls, name)
         related_field = self.rel.get_related_field()
-
-        if isinstance(related_field, MultipleFieldPrimaryKey):
+        if getattr(related_field, "is_composite_primarykeys_field", False):
+            opts.enable_composite = True
             opts._prepare = wrap_meta_prepare(opts, opts._prepare)
             opts.has_composite_foreignkeys_field = True
             opts.composite_foreignkeys_fields = getattr(opts, "composite_foreignkeys_fields", {})

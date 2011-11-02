@@ -2,7 +2,7 @@ __author__ = 'fabio'
 
 from django.conf import settings
 
-__all__ = ["assemble_pk", "disassemble_pk"]
+__all__ = ["assemble_pk", "disassemble_pk", "SEP", "ESCAPE_CHAR"]
 
 SEP, ESCAPE_CHAR  = getattr(settings, "COMPOSITE_PK_SEPARATOR_ESCAPE", '-.')
 
@@ -54,23 +54,3 @@ def disassemble_pk(comp_pk):
 
         return result
     return []
-
-if __name__ == '__main__':
-
-    #'ab', 'a_b', 'a|_b', 123, 'a_', 'b|', 'c|_', '_', '|', '|_', '_|', '', None, 'd|_'
-    params = ['ab', 'a'+SEP+'b', 'a'+ESCAPE_CHAR+SEP+'b', '123', 'a'+SEP, 'b'+ESCAPE_CHAR, 'c'+ESCAPE_CHAR+SEP, SEP, ESCAPE_CHAR, ESCAPE_CHAR+SEP, SEP+ESCAPE_CHAR, '', None, 'd'+ESCAPE_CHAR+SEP]
-
-    encoded_pk = assemble_pk(*params)
-    decoded_pk = disassemble_pk(encoded_pk)
-
-    print encoded_pk
-    print params
-    print decoded_pk
-
-    #Fallisce per il None
-    #assert params == decoded_pk
-    assert disassemble_pk(assemble_pk("1", "2")) == ['1', '2']
-
-    assert '' == assemble_pk(None), "None non gestito correttamente"
-    assert None == disassemble_pk(None), "None non gestito correttamente"
-    assert [''] == disassemble_pk(''), "Blank non gestito correttamente"

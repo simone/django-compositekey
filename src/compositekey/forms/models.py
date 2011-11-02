@@ -8,7 +8,7 @@ __all__ = ["activate_modelform_monkey_patch"]
 def wrap_construct_instance(original_construct_instance):
     def construct_instance(form, instance, fields=None, exclude=None):
         opts = instance._meta
-        if not getattr(opts, "has_composite_foreignkeys_field", getattr(opts, "has_composite_primarykeys_field", False)):
+        if not getattr(opts, "enable_composite", False):
             return original_construct_instance(form, instance, fields=fields, exclude=exclude)
 
         # todo: maybe is possible don't rewrite all function
@@ -41,7 +41,7 @@ def wrap_construct_instance(original_construct_instance):
 def wrap_model_to_dict(original_model_to_dict):
     def model_to_dict(instance, fields=None, exclude=None):
         opts = instance._meta
-        if not getattr(opts, "has_composite_foreignkeys_field", getattr(opts, "has_composite_primarykeys_field", False)):
+        if not getattr(opts, "enable_composite", False):
             return original_model_to_dict(instance, fields=fields, exclude=exclude)
         # todo: maybe is possible don't rewrite all function
 
@@ -76,7 +76,7 @@ def wrap_fields_for_model(original_fields_for_model):
     def fields_for_model(model, fields=None, exclude=None, widgets=None, formfield_callback=None):
         opts = model._meta
 
-        if not getattr(opts, "has_composite_foreignkeys_field", getattr(opts, "has_composite_primarykeys_field", False)):
+        if not getattr(opts, "enable_composite", False):
             return original_fields_for_model(model, fields=fields, exclude=fields, widgets=fields, formfield_callback=fields)
 
         # todo: maybe is possible don't rewrite all function
@@ -122,7 +122,7 @@ def wrap_get_foreign_key(original_get_foreign_key):
     def _get_foreign_key(parent_model, model, fk_name=None, can_fail=False):
         opts = model._meta
 
-        if not getattr(opts, "has_composite_foreignkeys_field", getattr(opts, "has_composite_primarykeys_field", False)):
+        if not getattr(opts, "enable_composite", False):
             return original_get_foreign_key(parent_model, model, fk_name=fk_name, can_fail=can_fail)
 
         # avoid circular import

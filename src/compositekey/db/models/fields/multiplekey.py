@@ -17,6 +17,7 @@ class MultipleFieldPrimaryKey(Field):
     }
     def __init__(self, *args, **kwargs):
         django_compositekey_patch()
+        self.is_composite_primarykeys_field = True
         kwargs['primary_key'] = True
         self._field_names = kwargs.pop('fields', [])
         assert isinstance(self._field_names, list) and len(self._field_names) > 0, \
@@ -46,6 +47,7 @@ class MultipleFieldPrimaryKey(Field):
         assert not cls._meta.has_auto_field, \
                "A model can't have one MultipleFieldPrimaryKey or AutoField."
 
+        opts.enable_composite = True
         cls._meta._prepare = wrap_meta_prepare(cls._meta, cls._meta._prepare)
         cls._meta.has_composite_primarykeys_field = True
         cls._meta.composite_primarykeys_field = self

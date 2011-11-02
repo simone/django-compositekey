@@ -8,7 +8,7 @@ from django.db.models.fields.related import SingleRelatedObjectDescriptor
 from django.db.models.sql.compiler import SQLCompiler
 
 from django.test import TestCase
-from compositekey.utils import assemble_pk
+from compositekey.utils import *
 from sample.models import *
 
 
@@ -37,7 +37,6 @@ class ModelTest(TestCase):
         bio = Biografy.objects.create(book=book, text="test")
         self.assertIsNotNone(bio.book.biografy)
         list(Book.objects.filter(biografy__text="test", biografy__text__icontains="es", ))
-
 
     def test_create_book(self):
         book = Book.objects.create(name="Libro sulle compositeKey", author="Simone")
@@ -81,3 +80,25 @@ class ModelTest(TestCase):
     def test_create_biografy(self):
         Biografy.objects.create(book=Book.objects.get_or_create(author="Bio", name="Grafy")[0], text="test...")
 
+
+
+class UtilsTest(TestCase):
+
+    def test_pk(self):
+        self.assertEquals(['TEST'], disassemble_pk('TEST'))
+        self.assertEquals(['1', '2'], disassemble_pk(assemble_pk("1", "2")))
+
+    def test_empty(self):
+        self.assertEquals(None, assemble_pk(None))
+        self.assertEquals('', assemble_pk(''))
+        self.assertEquals([], disassemble_pk(None))
+        self.assertEquals([''], disassemble_pk(''))
+
+    def test_reveribility(self):
+        params = ['ab', 'a'+SEP+'b', 'a'+ESCAPE_CHAR+SEP+'b', '123', 'a'+SEP, 'b'+ESCAPE_CHAR, 'c'+ESCAPE_CHAR+SEP, SEP, ESCAPE_CHAR, ESCAPE_CHAR+SEP, SEP+ESCAPE_CHAR, '', '', 'd'+ESCAPE_CHAR+SEP]
+        self.assertEquals(params, disassemble_pk(assemble_pk(*params)))
+
+        # todo: implement with "NONE_CHAR"
+        params.append(None)
+        self.assertEquals(params, disassemble_pk(assemble_pk(*params)))
+        self.assertEquals([None, '', 'TEST'], disassemble_pk(assemble_pk(None, '', 'TEST')))

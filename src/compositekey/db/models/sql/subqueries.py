@@ -12,17 +12,12 @@ def wrap_delete_batch(original_delete_batch):
     from compositekey import db
 
     def delete_batch(obj, pk_list, using, field=None):
-        """
-        Set up and execute delete queries for all the objects in pk_list.
-
-        More than one physical query may be executed if there are a
-        lot of values in pk_list.
-        """
+        opts=obj.model._meta
         if not field:
-            field = obj.model._meta.pk
+            field = opts.pk
 
         # original batch delete iof not composite
-        if not isinstance(field, db.MultipleFieldPrimaryKey):
+        if not getattr(opts, "enable_composite", False) or not getattr(field, "is_composite_primarykeys_field", False):
             return original_delete_batch(obj, pk_list, using, field=field)
 
         # composite PK fields
