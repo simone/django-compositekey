@@ -43,6 +43,7 @@ def wrap_get_from_clause(ori_filter_or_exclude):
                     if key == name or key.startswith("%s__" % name):
                         _update_filter_from(opts.composite_foreignkeys_fields[name].fields, kwargs, pk=name)
 
+        print "updated filters...", self.model, args, kwargs
         return ori_filter_or_exclude(self, negate, *args, **kwargs)
 
     _filter_or_exclude._sign = "activate_queryset_monkey_patch"

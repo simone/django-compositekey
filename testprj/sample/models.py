@@ -11,6 +11,9 @@ class Book(models.Model):
     def __unicode__(self):
         return u"%s (by %s)" % (self.name, self.author)
 
+class RealBook(Book):
+    text = models.CharField(max_length=100)
+
 class OldBook(models.Model):
     id = models.CharField(max_length=200, primary_key=True)
     name = models.CharField(max_length=100)
@@ -18,9 +21,6 @@ class OldBook(models.Model):
 
     def __unicode__(self):
         return u"%s (by %s)" % (self.name, self.author)
-
-class RealBook(Book):
-    text = models.CharField(max_length=100)
 
 class RealOldBook(OldBook):
     text = models.CharField(max_length=100)

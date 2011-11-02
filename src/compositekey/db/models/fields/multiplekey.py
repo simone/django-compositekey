@@ -71,8 +71,8 @@ class MultipleFieldPrimaryKey(Field):
             # TODO: better add primary key = () and not unique
             # example: PRIMARY KEY (album, disk, posn)
 
-            if names not in cls._meta.unique_together:
-                cls._meta.unique_together.append(names)
+#            if names not in cls._meta.unique_together:
+#                cls._meta.unique_together.append(names)
             for field in fields: field.db_index=True
 
             # get/set PK propery
