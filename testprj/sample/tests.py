@@ -86,16 +86,16 @@ class UtilsTest(TestCase):
         self.assertEquals(['1', '2'], disassemble_pk(assemble_pk("1", "2")))
 
     def test_empty(self):
-        self.assertEquals(None, assemble_pk(None))
+        #self.assertEquals(None, assemble_pk(None))
+        self.assertEquals(NONE_CHAR, assemble_pk(None))
         self.assertEquals('', assemble_pk(''))
         self.assertEquals([], disassemble_pk(None))
         self.assertEquals([''], disassemble_pk(''))
 
-    def test_reveribility(self):
-        params = ['ab', 'a'+SEP+'b', 'a'+ESCAPE_CHAR+SEP+'b', '123', 'a'+SEP, 'b'+ESCAPE_CHAR, 'c'+ESCAPE_CHAR+SEP, SEP, ESCAPE_CHAR, ESCAPE_CHAR+SEP, SEP+ESCAPE_CHAR, '', '', 'd'+ESCAPE_CHAR+SEP]
+    def test_reversibility(self):
+        params = ['ab', 'a'+SEP+'b', 'a'+ESCAPE_CHAR+SEP+'b', '123', 'a'+SEP, 'b'+ESCAPE_CHAR, 'c'+ESCAPE_CHAR+SEP, SEP, ESCAPE_CHAR, ESCAPE_CHAR+SEP, SEP+ESCAPE_CHAR, '', None, NONE_CHAR , 'd'+ESCAPE_CHAR+SEP]
         self.assertEquals(params, disassemble_pk(assemble_pk(*params)))
 
-        # todo: implement with "NONE_CHAR"
         params.append(None)
         self.assertEquals(params, disassemble_pk(assemble_pk(*params)))
         self.assertEquals([None, '', 'TEST'], disassemble_pk(assemble_pk(None, '', 'TEST')))
