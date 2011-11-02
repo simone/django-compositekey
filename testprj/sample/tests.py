@@ -4,6 +4,8 @@ when you run "manage.py test".
 
 Replace this with more appropriate tests for your application.
 """
+from django.db.models.fields.related import SingleRelatedObjectDescriptor
+from django.db.models.sql.compiler import SQLCompiler
 
 from django.test import TestCase
 from compositekey.utils import assemble_pk
@@ -15,6 +17,27 @@ class ModelTest(TestCase):
     def test_select_all(self):
         list(Book.objects.all())
         list(Chapter.objects.all())
+
+    def test_select_where_fk(self):
+        book = Book.objects.create(name="Libro sulle compositeKey", author="Simone")
+        list(Chapter.objects.filter(book=book))
+
+    def test_select_join_fk(self):
+        book = Book.objects.create(name="Libro sulle compositeKey", author="Simone")
+        Biografy.objects.create(book=book, text="test")
+        list(Biografy.objects.filter(book__author="Simone"))
+
+    def test_select_join_reverse_fk(self):
+        book = OldBook.objects.create(id="1", name="Libro sulle compositeKey", author="Simone")
+        bio = OldBiografy.objects.create(book=book, text="test")
+        self.assertIsNotNone(bio.book.oldbiografy)
+        list(OldBook.objects.filter(oldbiografy__text="test"))
+
+        book = Book.objects.create(name="Libro sulle compositeKey", author="Simone")
+        bio = Biografy.objects.create(book=book, text="test")
+        self.assertIsNotNone(bio.book.biografy)
+        list(Book.objects.filter(biografy__text="test", biografy__text__icontains="es", ))
+
 
     def test_create_book(self):
         book = Book.objects.create(name="Libro sulle compositeKey", author="Simone")
