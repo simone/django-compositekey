@@ -1,9 +1,9 @@
 __author__ = 'aldaran'
 
-from django.forms import models as module
+from django.forms import models
 from django.utils.datastructures import SortedDict
 
-__all__ = ["activate_modelform_monkey_path"]
+__all__ = ["activate_modelform_monkey_patch"]
 
 def wrap_construct_instance(original_construct_instance):
     def construct_instance(form, instance, fields=None, exclude=None):
@@ -35,7 +35,7 @@ def wrap_construct_instance(original_construct_instance):
             f.save_form_data(instance, cleaned_data[f.name])
 
         return instance
-    construct_instance._sign = "composite modelform_monkey_path"
+    construct_instance._sign = "composite modelform_monkey_patch"
     return construct_instance
 
 def wrap_model_to_dict(original_model_to_dict):
@@ -68,7 +68,7 @@ def wrap_model_to_dict(original_model_to_dict):
             else:
                 data[f.name] = f.value_from_object(instance)
         return data
-    model_to_dict._sign = "composite modelform_monkey_path"
+    model_to_dict._sign = "composite modelform_monkey_patch"
     return model_to_dict
 
 
@@ -114,7 +114,7 @@ def wrap_fields_for_model(original_fields_for_model):
             )
         return field_dict
 
-    fields_for_model._sign = "composite modelform_monkey_path"
+    fields_for_model._sign = "composite modelform_monkey_patch"
     return fields_for_model
 
 
@@ -154,14 +154,14 @@ def wrap_get_foreign_key(original_get_foreign_key):
             else:
                 raise Exception("%s has more than 1 ForeignKey to %s" % (model, parent_model))
         return fk
-    _get_foreign_key._sign = "composite modelform_monkey_path"
+    _get_foreign_key._sign = "composite modelform_monkey_patch"
     return _get_foreign_key
 
-def activate_modelform_monkey_path():
+def activate_modelform_monkey_patch():
     # monkey patch
-    if not hasattr(module.fields_for_model, "_sign"):
-        print "activate_modelform_monkey_path"
-        setattr(module, "fields_for_model", wrap_fields_for_model(module.fields_for_model))
-        setattr(module, "model_to_dict", wrap_model_to_dict(module.model_to_dict))
-        setattr(module, "construct_instance", wrap_construct_instance(module.construct_instance))
-        setattr(module, "_get_foreign_key", wrap_get_foreign_key(module._get_foreign_key))
+    if not hasattr(models.fields_for_model, "_sign"):
+        print "activate_modelform_monkey_patch"
+        setattr(models, "fields_for_model", wrap_fields_for_model(models.fields_for_model))
+        setattr(models, "model_to_dict", wrap_model_to_dict(models.model_to_dict))
+        setattr(models, "construct_instance", wrap_construct_instance(models.construct_instance))
+        setattr(models, "_get_foreign_key", wrap_get_foreign_key(models._get_foreign_key))
