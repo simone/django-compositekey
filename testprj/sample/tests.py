@@ -4,9 +4,6 @@ when you run "manage.py test".
 
 Replace this with more appropriate tests for your application.
 """
-from django.db.models.fields.related import SingleRelatedObjectDescriptor
-from django.db.models.sql.compiler import SQLCompiler
-
 from django.test import TestCase
 from compositekey.utils import *
 from sample.models import *
