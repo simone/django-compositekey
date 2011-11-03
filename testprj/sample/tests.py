@@ -13,6 +13,11 @@ from compositekey.utils import assemble_pk
 
 class ModelTest(TestCase):
 
+    def test_get_by_ck(self):
+        Book.objects.create(name="Libro sulle compositeKey", author="Simone")
+        book = Book.objects.get(name="Libro sulle compositeKey", author="Simone")
+        self.assertIsNotNone(book)
+
     def test_select_all(self):
         list(Book.objects.all())
         list(Chapter.objects.all())
