@@ -10,7 +10,6 @@ class MultipleColumnsIN(object):
         self.values = values
 
     def as_sql(self, qn, connection):
-        print 777, connection.vendor
         return service.get(connection.vendor, UseConcat)(self.cols, self.values).as_sql(qn, connection)
 
 class UseConcat(object):
@@ -33,7 +32,7 @@ class UseConcat(object):
         return "'%s'" % (str(value).replace("'", "''"))
 
     def as_sql(self, qn=None, connection=None):
-        col_sep = qn(SEPARATOR).join([self.concat]*2)
+        col_sep = self.quote_v(SEPARATOR).join([self.concat]*2)
 
         if isinstance(self.cols, (list, tuple)):
             # there are more than one column
@@ -49,7 +48,7 @@ class UseConcatQuote(UseConcat):
     cq = "quote_literal(%s)"
 
     def quote_v(self, value):
-        return "'%s'" % (str(value).replace("'", "\'"))
+        return "'%s'" % (str(value).replace("'", "''"))
 
 class UseTuple(object):
     """
