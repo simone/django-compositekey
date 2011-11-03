@@ -8,7 +8,7 @@ __all__ = ["activate_queryset_monkey_patch"]
 def _update_filter_from(fields, kwargs, pk="pk"):
     # todo optimize - invert.. for each kwargs... check "nou use pop"
     keys = [f.name for f in fields]
-    for op in ["", "__pk"]:
+    for op in ["", "__pk", "__id"]:
         value = kwargs.pop("%s%s" % (pk, op), None)
         value = value.pk if hasattr(value, "pk") else value
         if value: kwargs.update(zip(keys, disassemble_pk(value)))
@@ -26,6 +26,9 @@ def _update_filter_from(fields, kwargs, pk="pk"):
         values = kwargs.pop("%s__%s" % (pk, op), None)
         if values and len(values) > 0:
             kwargs.update(zip(["%s__%s" % (key, op) for key in keys], zip(*[disassemble_pk(value) for value in values])))
+
+        # todo: fix IN
+        # where.add(WhereIN([f.column for f in field_keys], [disassemble_pk(value) for value in off_list]), AND)
 
 def wrap_get_from_clause(ori_filter_or_exclude):
 

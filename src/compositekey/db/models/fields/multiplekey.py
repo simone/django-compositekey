@@ -5,7 +5,7 @@ from django.db.models.fields import Field
 
 from compositekey.db.models.fields.wrap import *
 from compositekey.patch import django_compositekey_patch
-
+from compositekey.utils import disassemble_pk
 __all__ = ['MultipleFieldPrimaryKey',]
 
 class MultipleFieldPrimaryKey(Field):
@@ -26,7 +26,7 @@ class MultipleFieldPrimaryKey(Field):
         super(MultipleFieldPrimaryKey, self).__init__(*args, **kwargs)
 
     def get_internal_type(self):
-        return "MultipleFieldPrimaryKey"
+        return "CharField"
 
     def to_python(self, value):
         return value
@@ -35,7 +35,7 @@ class MultipleFieldPrimaryKey(Field):
         pass
 
     def get_prep_value(self, value):
-        return None
+        return disassemble_pk(value)
 
     def contribute_to_class(self, cls, name):
         super(MultipleFieldPrimaryKey, self).contribute_to_class(cls, name)

@@ -24,12 +24,13 @@ class ModelTest(TestCase):
         Biografy.objects.create(book=book, text="test")
         list(Biografy.objects.filter(book__author="Simone"))
 
-    def test_select_join_reverse_fk(self):
+    def test_select_join_reverse_fk_old(self):
         book = OldBook.objects.create(id="1", name="Libro sulle compositeKey", author="Simone")
         bio = OldBiografy.objects.create(book=book, text="test")
         self.assertIsNotNone(bio.book.oldbiografy)
         list(OldBook.objects.filter(oldbiografy__text="test"))
 
+    def test_select_join_reverse_fk_composite(self):
         book = Book.objects.create(name="Libro sulle compositeKey", author="Simone")
         bio = Biografy.objects.create(book=book, text="test")
         self.assertIsNotNone(bio.book.biografy)
@@ -47,6 +48,15 @@ class ModelTest(TestCase):
         self.assertIsNotNone(book)
         book = Book.objects.get(pk=book.pk)
         self.assertIsNotNone(book)
+
+    def test_select_book_chapter_number(self):
+        #opts.get_all_field_names
+        com_pk = assemble_pk("Libro sulle compositeKey", "Simone")
+        book = Book.objects.create(pk=com_pk)
+        for n in range(10):
+            book.chapter_set.create(number=n)
+        list(Book.objects.filter(chapter__number=3))
+
 
     def test_create_chapter(self):
         chapter = Chapter(number=1, title="Introduzione")
