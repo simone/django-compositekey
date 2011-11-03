@@ -1,65 +1,87 @@
 from django.conf import settings
 
-SEPARATOR = getattr(settings, "SELECT_IN_SQL_SEPARATOR",   '#s3p#')
-CONCAT    = getattr(settings, "SELECT_IN_SQL_CONCATENATE", ' || ' )
+SEPARATOR = getattr(settings, "SELECT_IN_SQL_SEPARATOR",   '#')
 
+service = {}
 
-class WhereConcat(object):
+class MultipleColumnsIN(object):
+    def __init__(self, cols, values):
+        self.cols = cols
+        self.values = values
+
+    def as_sql(self, qn, connection):
+        print 777, connection.vendor
+        return service.get(connection.vendor, UseConcat)(self.cols, self.values).as_sql(qn, connection)
+
+class UseConcat(object):
     """
     Concat columns and values.
 
-    todo:
-     * checks escape (QN)
-     * check mysql compatibility "+" or group_concat
-     * check postgresql ||
-     * check oracle ||
-     * check M$ ||
-     * check DB2 ||
+    SQLITE note quote(column)
+    POSTGRES quote_ident, quote_literal
     """
-    def __init__(self, cols, values, operation='='):
+    concat = "||"
+    cq = "quote(%s)"
+
+    def __init__(self, cols, values):
         self.cols = cols
         self.values = values
-        self.operation = operation
+
+    def quote_v(self, value):
+        if isinstance(value, int):
+            return str(value)
+        return "'%s'" % (str(value).replace("'", "''"))
 
     def as_sql(self, qn=None, connection=None):
-        col_sep = qn(SEPARATOR).join([CONCAT]*2)
+        col_sep = qn(SEPARATOR).join([self.concat]*2)
 
         if isinstance(self.cols, (list, tuple)):
             # there are more than one column
-            column = qn(col_sep.join([qn(c) for c in self.cols]))
-            param = SEPARATOR.join(self.values)
+            column = col_sep.join([self.cq % qn(c) for c in self.cols])
+            params = [SEPARATOR.join([self.quote_v(v) for v in val]) for val in self.values]
         else:
-            column = qn(self.cols)
-            param = self.values
+            column = self.cq % qn(self.cols)
+            params = [self.quote_v(v) for v in self.values]
 
-        return '%s %s %%s' % (column, self.operation), param
+        return '%s IN (%%s)' % column, tuple(params or ())
 
+class UseConcatQuote(UseConcat):
+    cq = "quote_literal(%s)"
 
-class WhereConcatIN(object):
+    def quote_v(self, value):
+        return "'%s'" % (str(value).replace("'", "\'"))
+
+class UseTuple(object):
     """
-    Concat columns and values.
-    
-    todo:
-     * checks escape (QN)
-     * check mysql compatibility "+" or group_concat
-     * check postgresql ||
-     * check oracle ||
-     * check M$ ||
-     * check DB2 ||
+    MYSQL
+    ORACLE
     """
+    template = '%s IN (%%s)'
+
     def __init__(self, cols, values):
         self.cols = cols
         self.values = values
 
     def as_sql(self, qn=None, connection=None):
-        col_sep = qn(SEPARATOR).join([CONCAT]*2)
-
         if isinstance(self.cols, (list, tuple)):
             # there are more than one column
-            column = qn(col_sep.join([qn(c) for c in self.cols]))
-            params = [SEPARATOR.join(val) for val in self.values]
+            column = "(%s)" % ",".join([qn(c) for c in self.cols])
+            params = ["(%s)" % ",".join(val) for val in self.values]
         else:
             column = qn(self.cols)
             params = self.values
+        return self.template % column, tuple(params or ())
 
-        return '%s IN (%%s)' % column, tuple(params or ())
+
+
+class UseTupleValues(UseTuple):
+    """
+    DB2 (with values)
+    """
+    template = '%s IN (values %%s)'
+
+service["sqlite"] = UseConcat
+service["postgresql"] = UseConcatQuote
+service["mysql"] = UseTuple
+service["oracle"] = UseTuple
+service["DB2"] = UseTupleValues

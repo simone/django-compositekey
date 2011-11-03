@@ -35,7 +35,7 @@ class MultipleFieldPrimaryKey(Field):
         pass
 
     def get_prep_value(self, value):
-        return disassemble_pk(value)
+        return [field.get_prep_value(val) for field, val in zip(self.get_key_fields(), disassemble_pk(value))]
 
     def contribute_to_class(self, cls, name):
         super(MultipleFieldPrimaryKey, self).contribute_to_class(cls, name)

@@ -4,7 +4,7 @@ from django.db.models.sql.subqueries import DeleteQuery
 from django.db.models.sql.constants import *
 from django.db.models.sql.where import AND
 
-from compositekey.db.models.sql.where import WhereConcatIN
+from compositekey.db.models.sql.where import MultipleColumnsIN
 
 __all__ =["activate_delete_monkey_patch"]
 
@@ -28,7 +28,7 @@ def wrap_delete_batch(original_delete_batch):
             off_list = pk_list[offset : offset + GET_ITERATOR_CHUNK_SIZE]
 
             # delete where in using concatenate features
-            where.add(WhereConcatIN([f.column for f in field_keys], [disassemble_pk(value) for value in off_list]), AND)
+            where.add(MultipleColumnsIN([f.column for f in field_keys], [field.get_prep_value(value) for value in off_list]), AND)
 
             obj.do_query(obj.model._meta.db_table, where, using=using)
         
