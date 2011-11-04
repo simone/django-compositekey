@@ -6,6 +6,7 @@ SEPARATOR = getattr(settings, "SELECT_IN_SQL_SEPARATOR",   '#')
 
 service = {}
 
+
 class MultipleColumnsIN(object):
     def __init__(self, cols, values):
         self.cols = cols
@@ -13,6 +14,7 @@ class MultipleColumnsIN(object):
 
     def as_sql(self, qn, connection):
         return service.get(connection.vendor, UseConcat)(self.cols, self.values).as_sql(qn, connection)
+
 
 class UseConcat(object):
     """
@@ -44,6 +46,7 @@ class UseConcat(object):
             params = [self.quote_v(v) for v in self.values]
         return '%s IN (%s)' % (column, ",".join(["%s"] * len(params))), tuple(params or ())
 
+
 class UseConcatQuote(UseConcat):
     """
     POSTGRES quote_literal
@@ -53,9 +56,9 @@ class UseConcatQuote(UseConcat):
     def quote_v(self, value):
         return "'%s'" % (str(value).replace("'", "''"))
 
+
 class UseTuple(object):
     """
-    MYSQL
     ORACLE
     """
     template = '%s IN (%%s)'
@@ -67,13 +70,30 @@ class UseTuple(object):
     def as_sql(self, qn=None, connection=None):
         if isinstance(self.cols, (list, tuple)):
             # there are more than one column
-            column = "(%s)" % ",".join([qn(c) for c in self.cols])
-            params = ["(%s)" % ",".join(val) for val in self.values]
-        else:
-            column = qn(self.cols)
-            params = self.values
-        return self.template % column, tuple(params or ())
 
+            column = "(%s)" % ",".join([qn(c.strip()) for c in self.cols])
+            # this is a workaround to avoid changes to template as is
+            format = self.template.replace("%%s", "%s")
+            params, tuples = [], []
+
+            for val in self.values:
+                tuples.append("(%s)" % ",".join(["%s" for c in val]))
+                params.extend(val)
+
+            format = format % (column, ",".join(tuples))
+        else:
+            column = qn(self.cols.strip())
+            params = self.values
+            format = self.template % column
+
+        return format, params
+
+
+class UseTupleWithDummy(UseTuple):
+    """
+    MYSQL
+    """
+    template = '%s IN (%%s, (null,null))'
 
 
 class UseTupleValues(UseTuple):
@@ -84,6 +104,6 @@ class UseTupleValues(UseTuple):
 
 service["sqlite"] = UseConcat
 service["postgresql"] = UseConcatQuote
-service["mysql"] = UseTuple
+service["mysql"] = UseTupleWithDummy
 service["oracle"] = UseTuple
 service["DB2"] = UseTupleValues
