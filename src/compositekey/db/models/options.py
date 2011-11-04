@@ -37,8 +37,9 @@ def wrap_init_name_map(ori_init_name_map):
     return init_name_map
 
 def activate_init_name_map_monkey_patch():
+    pass
     # monkey patch
-    if not hasattr(Options.init_name_map, "_sign"):
-        print "activate_init_name_map_monkey_patch"
-        Options.init_name_map = wrap_init_name_map(Options.init_name_map)
+#    if not hasattr(Options.init_name_map, "_sign"):
+#        print "activate_init_name_map_monkey_patch"
+#        Options.init_name_map = wrap_init_name_map(Options.init_name_map)
     

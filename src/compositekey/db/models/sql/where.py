@@ -1,86 +1,40 @@
-from django.conf import settings
+from django.db.models.fields import Field
+from django.db.models.sql.where import EmptyShortCircuit, EmptyResultSet, WhereNode
 
-SEPARATOR = getattr(settings, "SELECT_IN_SQL_SEPARATOR",   '#')
 
-service = {}
+def wrap_make_atom(original_make_atom):
+    def make_atom(self, child, qn, connection):
+        """
+        Turn a tuple (table_alias, column_name, db_type, lookup_type,
+        value_annot, params) into valid SQL.
 
-class MultipleColumnsIN(object):
-    def __init__(self, cols, values):
-        self.cols = cols
-        self.values = values
-
-    def as_sql(self, qn, connection):
-        return service.get(connection.vendor, UseConcat)(self.cols, self.values).as_sql(qn, connection)
-
-class UseConcat(object):
-    """
-    Concat columns and values.
-
-    SQLITE note quote(column)
-    POSTGRES quote_ident, quote_literal
-    """
-    concat = "||"
-    cq = "quote(%s)"
-
-    def __init__(self, cols, values):
-        self.cols = cols
-        self.values = values
-
-    def quote_v(self, value):
-        if isinstance(value, int):
-            return str(value)
-        return "'%s'" % (str(value).replace("'", "''"))
-
-    def as_sql(self, qn=None, connection=None):
-        col_sep = self.quote_v(SEPARATOR).join([self.concat]*2)
-
-        if isinstance(self.cols, (list, tuple)):
-            # there are more than one column
-            column = col_sep.join([self.cq % qn(c) for c in self.cols])
-            params = [SEPARATOR.join([self.quote_v(v) for v in val]) for val in self.values]
+        Returns the string for the SQL fragment and the parameters to use for
+        it.
+        """
+        _lvalue, _lookup_type, _value_annot, _params_or_value = child
+        if hasattr(_lvalue, 'process'):
+            try:
+                _lvalue, _params = _lvalue.process(_lookup_type, _params_or_value, connection)
+            except EmptyShortCircuit:
+                raise EmptyResultSet
         else:
-            column = self.cq % qn(self.cols)
-            params = [self.quote_v(v) for v in self.values]
+            params = Field().get_db_prep_lookup(_lookup_type, _params_or_value,
+                connection=connection, prepared=True)
 
-        return '%s IN (%%s)' % column, tuple(params or ())
+        if isinstance(_lvalue, tuple):
+            # A direct database column lookup.
+            table_alias, name, db_type = _lvalue
+            if hasattr(name, "sql_for_columns"):
+                field_sql = name.sql_for_columns(_lvalue, qn, connection)
+                if hasattr(field_sql, "make_atoms"):
+                    return field_sql.make_atoms(_params, _lookup_type, _value_annot, qn, connection)
+        return original_make_atom(self, child, qn, connection)
 
-class UseConcatQuote(UseConcat):
-    cq = "quote_literal(%s)"
+    make_atom._sign = "monkey patch by compositekey"
+    return make_atom
 
-    def quote_v(self, value):
-        return "'%s'" % (str(value).replace("'", "''"))
-
-class UseTuple(object):
-    """
-    MYSQL
-    ORACLE
-    """
-    template = '%s IN (%%s)'
-
-    def __init__(self, cols, values):
-        self.cols = cols
-        self.values = values
-
-    def as_sql(self, qn=None, connection=None):
-        if isinstance(self.cols, (list, tuple)):
-            # there are more than one column
-            column = "(%s)" % ",".join([qn(c) for c in self.cols])
-            params = ["(%s)" % ",".join(val) for val in self.values]
-        else:
-            column = qn(self.cols)
-            params = self.values
-        return self.template % column, tuple(params or ())
-
-
-
-class UseTupleValues(UseTuple):
-    """
-    DB2 (with values)
-    """
-    template = '%s IN (values %%s)'
-
-service["sqlite"] = UseConcat
-service["postgresql"] = UseConcatQuote
-service["mysql"] = UseTuple
-service["oracle"] = UseTuple
-service["DB2"] = UseTupleValues
+def activate_make_atom_monkey_patch():
+    # monkey patch
+    if not hasattr(WhereNode.make_atom, "_sign"):
+        print "activate_make_atom_monkey_patch"
+        WhereNode.make_atom = wrap_make_atom(WhereNode.make_atom)

@@ -34,7 +34,7 @@ def wrap_get_from_clause(ori_filter_or_exclude):
 
     def _filter_or_exclude(self, negate, *args, **kwargs):
         opts=self.model._meta
-        if getattr(opts, "enable_composite", False):
+        if False and getattr(opts, "enable_composite", False):
             # need to unpack pk or keyname of composite key in values
             if getattr(opts, "has_composite_primarykeys_field", False):
                 fields = self.model._meta.composite_primarykeys_field.get_key_fields()
@@ -55,7 +55,8 @@ def wrap_get_from_clause(ori_filter_or_exclude):
 
 
 def activate_queryset_monkey_patch():
+    pass
     # monkey patch
-    if not hasattr(QuerySet._filter_or_exclude, "_sign"):
-        print "activate_queryset_monkey_patch"
-        QuerySet._filter_or_exclude = wrap_get_from_clause(QuerySet._filter_or_exclude)
+    #if not hasattr(QuerySet._filter_or_exclude, "_sign"):
+        #print "activate_queryset_monkey_patch"
+        #QuerySet._filter_or_exclude = wrap_get_from_clause(QuerySet._filter_or_exclude)

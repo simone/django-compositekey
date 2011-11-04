@@ -1,3 +1,5 @@
+from compositekey.db.models.sql.column import MultiColumn
+
 __author__ = 'aldaran'
 
 from django.db.models.fields.related import ForeignKey
@@ -54,7 +56,7 @@ def wrap_fk_monkey_patch(ori_init, ori_contribute_to_class):
                             opts.unique_together.append([f.name for f in new_fields])
 
                     # hack db_column for joins
-                    self.column = ",".join([f.column for f in new_fields])
+                    self.column = MultiColumn(new_fields)
 
 
     contribute_to_class._sign = "activate_fk_monkey_patch"

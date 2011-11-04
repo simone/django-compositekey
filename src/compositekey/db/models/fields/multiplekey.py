@@ -1,3 +1,5 @@
+from compositekey.db.models.sql.column import MultiColumn
+
 __author__ = 'aldaran'
 
 from django.utils.translation import ugettext_lazy as _
@@ -81,8 +83,7 @@ class MultipleFieldPrimaryKey(Field):
             setattr(cls, cls._meta.pk.attname, property(get_composite_pk(fields), set_composite_pk(fields)))
 
             # hack db_column for joins see compiler
-            self.column = ",".join([f.column for f in fields])
-
+            self.column = MultiColumn(fields)
 
         cls._meta._lazy_prepare_field_actions.append(lazy_init)
 

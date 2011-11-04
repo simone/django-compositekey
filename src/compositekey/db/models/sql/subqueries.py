@@ -4,7 +4,7 @@ from django.db.models.sql.subqueries import DeleteQuery
 from django.db.models.sql.constants import *
 from django.db.models.sql.where import AND
 
-from compositekey.db.models.sql.where import MultipleColumnsIN
+from compositekey.db.models.sql.wherein import MultipleColumnsIN
 
 __all__ =["activate_delete_monkey_patch"]
 
