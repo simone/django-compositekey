@@ -70,7 +70,8 @@ class UseTuple(object):
     def as_sql(self, qn=None, connection=None):
         if isinstance(self.cols, (list, tuple)):
             # there are more than one column
-            column = "(%s)" % ",".join([qn(c) for c in self.cols])
+
+            column = "(%s)" % ",".join([qn(c.strip()) for c in self.cols])
             # this is a workaround to avoid changes to template as is
             format = self.template.replace("%%s", "%s")
             params, tuples = [], []
@@ -81,7 +82,7 @@ class UseTuple(object):
 
             format = format % (column, ",".join(tuples))
         else:
-            column = qn(self.cols)
+            column = qn(self.cols.strip())
             params = self.values
             format = self.template % column
 
