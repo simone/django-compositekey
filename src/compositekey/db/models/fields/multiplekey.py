@@ -44,8 +44,8 @@ class MultipleFieldPrimaryKey(Field):
         opts = cls._meta
         if not self in opts.local_fields: return
 
-#        assert not getattr(cls._meta, "has_composite_primarykeys_field", False), \
-#               "A model can't have more than one MultipleFieldPrimaryKey."
+        assert not getattr(cls._meta, "has_composite_primarykeys_field", False), \
+               "A model can't have more than one MultipleFieldPrimaryKey."
         assert not cls._meta.has_auto_field, \
                "A model can't have one MultipleFieldPrimaryKey or AutoField."
 
@@ -54,15 +54,7 @@ class MultipleFieldPrimaryKey(Field):
         cls._meta.has_composite_primarykeys_field = True
         cls._meta.composite_primarykeys_field = self
         cls._meta.composite_special_fields = getattr(cls._meta, "composite_special_fields", [])
-
-        # needs to remove esplicit from fields (really is not a field)
-        cls._meta.local_fields.remove(self)
-        cls._meta.add_virtual_field(self)
         cls._meta.composite_special_fields.append(self)
-
-        # todo: patch cls._meta.get_field for RELATED
-        cls._meta.get_field = wrap_get_field(cls._meta, cls._meta.get_field)
-        cls._meta.get_field_by_name = wrap_get_field_by_name(cls._meta, cls._meta.get_field_by_name)
 
         cls.save = wrap_save_model(cls.save) # adding reset PK cache
         cls.__init__ = wrap_init_model(cls.__init__) # adding reset PK cache
@@ -75,8 +67,8 @@ class MultipleFieldPrimaryKey(Field):
             # TODO: better add primary key = () and not unique
             # example: PRIMARY KEY (album, disk, posn)
 
-#            if names not in cls._meta.unique_together:
-#                cls._meta.unique_together.append(names)
+            if names not in cls._meta.unique_together:
+                cls._meta.unique_together.append(names)
             for field in fields: field.db_index=True
 
             # get/set PK propery
@@ -84,8 +76,12 @@ class MultipleFieldPrimaryKey(Field):
 
             # hack db_column for joins see compiler
             self.column = MultiColumn(fields)
-
+            self.db_type = lambda *args, **kwargs: None
+            self.db_index = False
+            self.not_in_db = True
+            
         cls._meta._lazy_prepare_field_actions.append(lazy_init)
+
 
 
     def formfield(self, **kwargs):

@@ -11,9 +11,9 @@ class ChapterInline(admin.TabularInline):
 
 class BookAdmin(admin.ModelAdmin):
     list_filter = ("name", "author",)
-    inlines = [
-        ChapterInline,
-    ]
+    #inlines = [
+    #    ChapterInline,
+    #]
 
 admin.site.register(Book, BookAdmin)
 admin.site.register(RealBook)

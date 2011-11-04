@@ -18,7 +18,7 @@ def wrap_make_atom(original_make_atom):
             except EmptyShortCircuit:
                 raise EmptyResultSet
         else:
-            params = Field().get_db_prep_lookup(_lookup_type, _params_or_value,
+            _params = Field().get_db_prep_lookup(_lookup_type, _params_or_value,
                 connection=connection, prepared=True)
 
         if isinstance(_lvalue, tuple):

@@ -2,13 +2,6 @@ __author__ = 'aldaran'
 
 from compositekey.utils import *
 
-def _get_field(opts, name):
-    if getattr(opts, "has_composite_primarykeys_field", False) and opts.composite_primarykeys_field.name == name:
-        return (opts.composite_primarykeys_field, None, True, False)
-    if getattr(opts, "has_composite_foreignkeys_field", False) and opts.composite_foreignkeys_fields.has_key(name):
-        return (opts.composite_foreignkeys_fields.get(name), None, True, False)
-    return None
-
 def wrap_meta_prepare(opts, original_prepare):
     if hasattr(original_prepare, "_sign"):
         return original_prepare
@@ -19,18 +12,6 @@ def wrap_meta_prepare(opts, original_prepare):
         original_prepare(model)
     _prepare._sign = "composite"
     return _prepare
-
-def wrap_get_field(opts, original_get_field):
-    def get_field(name, many_to_many=True):
-        f = _get_field(opts, name)
-        return f[0] if f else original_get_field(name, many_to_many=many_to_many)
-    return get_field
-
-def wrap_get_field_by_name(opts, original_get_field_by_name):
-    def get_field_by_name(name):
-        return _get_field(opts, name) or original_get_field_by_name(name)
-    return get_field_by_name
-
 
 def get_composite_pk(fields, name="pk"):
     cache_name="_composite_%s_cache" % name
@@ -74,22 +55,12 @@ def wrap_init_model(original_init):
     if hasattr(original_init, "_sign"):
         return original_init
     def __init__(obj, *args, **kwargs):
-        opts = obj._meta
-
-        post_actions = []
-        if getattr(opts, "has_composite_primarykeys_field", False) and kwargs.has_key(opts.composite_primarykeys_field.name):
-            pk = kwargs.pop(opts.composite_primarykeys_field.name)
-            post_actions.append(lambda : setattr(obj, opts.composite_primarykeys_field.name, pk))
-
-        if getattr(opts, "has_composite_foreignkeys_field", False):
-            for name in opts.composite_foreignkeys_fields.keys():
-                if kwargs.has_key(name):
-                    val = kwargs.pop(name)
-                    post_actions.append(lambda : setattr(obj, name, val))
+        if len(args)<len(obj._meta.fields):
+            for value, f in zip(args, [f for f in obj._meta.fields if not getattr(f, "not_in_db", False)]):
+                kwargs.update({f.name:value})
+            args = []
 
         original_init(obj, *args, **kwargs)
-
-        for action in post_actions: action()
         # setup pk cache
         obj.pk
     __init__._sign = "composite"

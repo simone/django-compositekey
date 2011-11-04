@@ -62,7 +62,7 @@ class ModelTest(TestCase):
         book = Book.objects.create(pk=com_pk)
         for n in range(10):
             book.chapter_set.create(number=n)
-        list(Book.objects.filter(chapter__number=3))
+        list(Book.objects.filter(chapter_set__number=3))
 
 
     def test_create_chapter(self):

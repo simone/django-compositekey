@@ -20,7 +20,9 @@ class Atoms(object):
             # we have to be sure
             params = [[field.get_prep_value(val) for field, val in zip(self.fields, disassemble_pk(params[0]))]]
 
-        sql, new_params = zip(*[self.make_atom(field_sql, param, lookup_type, value_annot, qn, connection) for field_sql, param in zip(self.sql_colums, zip(*params))])
+        atoms = zip(*[self.make_atom(field_sql, param, lookup_type, value_annot, qn, connection) for field_sql, param in zip(self.sql_colums, zip(*params))])
+        if not atoms: return "", []
+        sql, new_params = atoms
 
         # [0] is a bad smell
         return " AND ".join(sql), zip(*new_params)[0]
