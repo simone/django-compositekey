@@ -149,7 +149,7 @@ class AdminTest(TestCase):
         self.assertEqual("Change book", response.context['title'])
 
 
-        # Don't change nothing, simple try post data:
+        # Don't changes nothing, simple tries post data:
 
         post_data = {
             'name': nome_libro,
@@ -176,4 +176,5 @@ class AdminTest(TestCase):
 
         response = self.client.post('/admin/sample/book/%s/' % book_id, post_data)
 
+        self.assertIsNotNone(response.context)
         self.assertEqual('Select book to change', response.context['title'])
