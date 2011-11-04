@@ -9,7 +9,6 @@ def wrap_insert_query(original_insert_query):
 
     def _insert(self, objs, fields, **kwargs):
         fields = [field for field in fields if not getattr(field, "not_in_db", False)]
-        print 555555, fields
         return original_insert_query(self, objs, fields, **kwargs)
 
     _insert._sign = "activate_insert_query_monkey_patch"
