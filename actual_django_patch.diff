@@ -1,0 +1,74 @@
+Index: django/db/models/sql/query.py
+===================================================================
+--- django/db/models/sql/query.py	(revision 17070)
++++ django/db/models/sql/query.py	(working copy)
+@@ -1610,16 +1610,18 @@
+                         True)
+                 final_alias = joins[-1]
+                 col = target.column
+-                if len(joins) > 1:
+-                    join = self.alias_map[final_alias]
+-                    if col == join[RHS_JOIN_COL]:
+-                        self.unref_alias(final_alias)
+-                        final_alias = join[LHS_ALIAS]
+-                        col = join[LHS_JOIN_COL]
+-                        joins = joins[:-1]
+-                self.promote_alias_chain(joins[1:])
+-                self.select.append((final_alias, col))
+-                self.select_fields.append(field)
++                cols = col.columns if hasattr(col, "columns") else [col]
++                for col in cols:
++                    if len(joins) > 1:
++                        join = self.alias_map[final_alias]
++                        if col == join[RHS_JOIN_COL]:
++                            self.unref_alias(final_alias)
++                            final_alias = join[LHS_ALIAS]
++                            col = join[LHS_JOIN_COL]
++                            joins = joins[:-1]
++                    self.promote_alias_chain(joins[1:])
++                    self.select.append((final_alias, col))
++                    self.select_fields.append(field)
+         except MultiJoin:
+             raise FieldError("Invalid field name: '%s'" % name)
+         except FieldError:
+Index: django/db/models/base.py
+===================================================================
+--- django/db/models/base.py	(revision 17070)
++++ django/db/models/base.py	(working copy)
+@@ -291,7 +291,7 @@
+             # Daft, but matches old exception sans the err msg.
+             raise IndexError("Number of args exceeds number of fields")
+ 
+-        fields_iter = iter(self._meta.fields)
++        fields_iter = iter([f for f in self._meta.fields if not getattr(f, "not_in_db", False)])
+         if not kwargs:
+             # The ordering of the izip calls matter - izip throws StopIteration
+             # when an iter throws it. So if the first iter throws it, the second
+@@ -360,7 +360,8 @@
+         if kwargs:
+             for prop in kwargs.keys():
+                 try:
+-                    if isinstance(getattr(self.__class__, prop), property):
++                    _att = getattr(self.__class__, prop)
++                    if isinstance(_att, property) or hasattr(_att, "__set__"):
+                         setattr(self, prop, kwargs.pop(prop))
+                 except AttributeError:
+                     pass
+Index: django/db/backends/creation.py
+===================================================================
+--- django/db/backends/creation.py	(revision 17070)
++++ django/db/backends/creation.py	(working copy)
+@@ -68,8 +68,12 @@
+                     field_output.extend(ref_output)
+             table_output.append(' '.join(field_output))
+         for field_constraints in opts.unique_together:
++            cols = [opts.get_field(f).column for f in field_constraints]
++            cols = [c.columns if hasattr(c, "columns") else [c] for c in cols]
++            import operator
++            cols = reduce(operator.add, cols)
+             table_output.append(style.SQL_KEYWORD('UNIQUE') + ' (%s)' % \
+-                ", ".join([style.SQL_FIELD(qn(opts.get_field(f).column)) for f in field_constraints]))
++                ", ".join([style.SQL_FIELD(qn(c)) for c in cols]))
+ 
+         full_statement = [style.SQL_KEYWORD('CREATE TABLE') + ' ' + style.SQL_TABLE(qn(opts.db_table)) + ' (']
+         for i, line in enumerate(table_output): # Combine and add commas.
