@@ -7,6 +7,12 @@ __all__ = ["assemble_pk", "disassemble_pk", "SEP", "ESCAPE_CHAR", "NONE_CHAR"]
 SEP, ESCAPE_CHAR, NONE_CHAR = getattr(settings, "COMPOSITE_PK_SEPARATOR_ESCAPE", '-.N')
 
 def assemble_pk(*values):
+
+    # no ammissible multiplekey with null or blank values
+    for val in values:
+        if val in ['', None]:
+            return None
+
     result = ''
     for value in values:
 

@@ -13,12 +13,15 @@ class Atoms(object):
         self.sql_colums = sql_colums
 
     def make_atoms(self, params, lookup_type, value_annot, qn, connection):
+        # regolarize params
+        if len(params)>0 and len(params[0]) < len(self.sql_colums):
+            params = params[0]
+
         if lookup_type == 'in':
             return MultipleColumnsIN(self.sql_colums, params).as_sql(qn, connection)
-
-        if lookup_type in ['iexact']:
-            # we have to be sure
+        if lookup_type in ['iexact']: # todo we have to be sure!
             params = [[field.get_prep_value(val) for field, val in zip(self.fields, disassemble_pk(params[0]))]]
+
 
         atoms = zip(*[self.make_atom(field_sql, param, lookup_type, value_annot, qn, connection) for field_sql, param in zip(self.sql_colums, zip(*params))])
         if not atoms: return "", []
@@ -28,7 +31,6 @@ class Atoms(object):
         return " AND ".join(sql), zip(*new_params)[0]
 
     def make_atom(self, field_sql, params, lookup_type, value_annot, qn, connection):
-        
         if value_annot is datetime.datetime:
             cast_sql = connection.ops.datetime_cast_sql()
         else:
@@ -89,7 +91,7 @@ class MultiColumn(object):
         return Atoms(self.fields, lhs)
 
     def __repr__(self):
-        return ",".join(self.columns)
+        return "MultiColumn(%s)" % ",".join(self.columns)
 
     def startswith(self, _):
         raise Exception(self.fields, self.columns)

@@ -11,35 +11,23 @@ class Book(models.Model):
     def __unicode__(self):
         return u"%s (by %s)" % (self.name, self.author)
 
-class RealBook(Book):
+class BookReal(Book):
     text = models.CharField(max_length=100)
-
-class OldBook(models.Model):
-    id = models.CharField(max_length=200, primary_key=True)
-    name = models.CharField(max_length=100)
-    author = models.CharField(max_length=100)
 
     def __unicode__(self):
-        return u"%s (by %s)" % (self.name, self.author)
-
-class RealOldBook(OldBook):
-    text = models.CharField(max_length=100)
+        return u"REAL: %s" % unicode(self.book_ptr)
 
 class Library(models.Model):
-#    books = models.ManyToManyField(Book)
     name = models.CharField(max_length=100)
+    books = models.ManyToManyField(Book)
+
+    def __unicode__(self):
+        return u"Library: %s" % unicode(self.name)
+
 
 class Biografy(models.Model):
     id = db.MultipleFieldPrimaryKey(fields=["book",])
     book = models.OneToOneField(Book)
-    text = models.CharField(max_length=100)
-
-    def __unicode__(self):
-        return u"BIO: %s" % unicode(self.book)
-
-class OldBiografy(models.Model):
-    id = models.CharField(max_length=200, primary_key=True)
-    book = models.OneToOneField(OldBook)
     text = models.CharField(max_length=100)
 
     def __unicode__(self):
@@ -63,4 +51,48 @@ class AbstractChapter(models.Model):
         return u"%s (%s) %s" % (self.book_name, self.number, self._author)
 
 class Chapter(AbstractChapter):
+    text = models.CharField(max_length=100)
+
+
+class OldBook(models.Model):
+    id = models.CharField(max_length=200, primary_key=True)
+    name = models.CharField(max_length=100)
+    author = models.CharField(max_length=100)
+
+    def __unicode__(self):
+        return u"%s (by %s)" % (self.name, self.author)
+
+class OldBookReal(OldBook):
+    text = models.CharField(max_length=100)
+
+    def __unicode__(self):
+        return u"REAL: %s" % unicode(self.oldbook_ptr)
+
+class OldBiografy(models.Model):
+    id = models.CharField(max_length=200, primary_key=True)
+    book = models.OneToOneField(OldBook)
+    text = models.CharField(max_length=100)
+
+    def __unicode__(self):
+        return u"BIO: %s" % unicode(self.book)
+
+class OldLibrary(models.Model):
+    name = models.CharField(max_length=100)
+    books = models.ManyToManyField(OldBook)
+
+    def __unicode__(self):
+        return u"Library: %s" % unicode(self.name)
+
+class AbstractOldChapter(models.Model):
+    book = models.ForeignKey(OldBook, to_field="id")
+    number = models.PositiveSmallIntegerField()
+    title = models.CharField(max_length=100)
+
+    class Meta:
+        abstract = True
+
+    def __unicode__(self):
+        return u"%s (%s) %s" % (self.book.name, self.number, self.book.author)
+
+class OldChapter(AbstractOldChapter):
     text = models.CharField(max_length=100)

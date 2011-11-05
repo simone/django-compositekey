@@ -5,11 +5,12 @@ when you run "manage.py test".
 Replace this with more appropriate tests for your application.
 """
 from django.contrib.auth.models import User
+from django.http import HttpResponseRedirect
 from django.test import TestCase
 from compositekey.utils import *
 from sample.models import *
 from compositekey.utils import assemble_pk
-
+from django.forms.models import modelform_factory, modelformset_factory
 
 class ModelTest(TestCase):
 
@@ -94,6 +95,25 @@ class ModelTest(TestCase):
     def test_create_biografy(self):
         Biografy.objects.create(book=Book.objects.get_or_create(author="Bio", name="Grafy")[0], text="test...")
 
+    def test_doc_1(self):
+        b = Book.objects.create(name="Orgoglio e Pregiudizio", author="Austen")
+        self.assertEqual(b.pk, 'Austen-Orgoglio e Pregiudizio')
+        c = b.chapter_set.create(number=1, title="Primo", text="Ciao")
+        self.assertEqual(c.pk, 'Austen-Orgoglio e Pregiudizio-1')
+        b2 = Book.objects.get(pk=b.pk)
+        self.assertEqual(b2.pk, 'Austen-Orgoglio e Pregiudizio')
+        c2 = Chapter.objects.get(pk=c.pk)
+        self.assertEqual(c2.pk, 'Austen-Orgoglio e Pregiudizio-1')
+        c3 = b.chapter_set.get(number=1)
+        self.assertEqual(c3.pk, 'Austen-Orgoglio e Pregiudizio-1')
+
+    def test_doc_2(self):
+        r = BookReal.objects.create(name='REAL', author='Simone', text='9788877873859')
+        self.assertEqual(r.pk, 'Simone-REAL')
+        self.assertEqual(len(BookReal.objects.filter(pk=r.pk)), 1)
+        self.assertEqual(len(Book.objects.filter(pk=r.pk)), 1)
+        self.assertEqual(BookReal.objects.get(pk=r.pk).pk, 'Simone-REAL')
+
 
 
 class UtilsTest(TestCase):
@@ -104,76 +124,93 @@ class UtilsTest(TestCase):
 
     def test_empty(self):
         #self.assertEquals(None, assemble_pk(None))
-        self.assertEquals(NONE_CHAR, assemble_pk(None))
-        self.assertEquals('', assemble_pk(''))
+        self.assertEquals(None, assemble_pk(None))#NONE_CHAR
+        self.assertEquals(None, assemble_pk(''))
         self.assertEquals([], disassemble_pk(None))
         self.assertEquals([''], disassemble_pk(''))
 
     def test_reversibility(self):
-        params = ['ab', 'a'+SEP+'b', 'a'+ESCAPE_CHAR+SEP+'b', '123', 'a'+SEP, 'b'+ESCAPE_CHAR, 'c'+ESCAPE_CHAR+SEP, SEP, ESCAPE_CHAR, ESCAPE_CHAR+SEP, SEP+ESCAPE_CHAR, '', None, NONE_CHAR , 'd'+ESCAPE_CHAR+SEP]
+        # '', None, NOT ammissible
+        params = ['ab', 'a'+SEP+'b', 'a'+ESCAPE_CHAR+SEP+'b', '123', 'a'+SEP, 'b'+ESCAPE_CHAR, 'c'+ESCAPE_CHAR+SEP, SEP, ESCAPE_CHAR, ESCAPE_CHAR+SEP, SEP+ESCAPE_CHAR, NONE_CHAR , 'd'+ESCAPE_CHAR+SEP]
         self.assertEquals(params, disassemble_pk(assemble_pk(*params)))
 
-        params.append(None)
-        self.assertEquals(params, disassemble_pk(assemble_pk(*params)))
-        self.assertEquals([None, '', 'TEST'], disassemble_pk(assemble_pk(None, '', 'TEST')))
+    def test_not_reversibility(self):    
+        self.assertEquals([], disassemble_pk(assemble_pk(None, '', 'TEST')))
 
 
 class AdminTest(TestCase):
 
-    fixtures = ['admin.json']
+#    fixtures = ['admin.json']
 
     def setUp(self):
-        username = 'test_user'
-        pwd = 'secret'
-
-        self.u = User.objects.create_user(username, '', pwd)
+        pwd = "secret"
+        self.u = User.objects.create_user('test_user', '', pwd)
         self.u.is_staff = True
         self.u.is_superuser = True
         self.u.save()
-
-        self.assertTrue(self.client.login(username=username, password=pwd), "Logging in user %s, pwd %s failed." % (username, pwd))
+        self.assertTrue(self.client.login(username=self.u.username, password=pwd))
 
     def tearDown(self):
         self.client.logout()
         self.u.delete()
 
     def test_book_chapter_inlines(self):
-        autore_libro = 'auore libro 1'
-        nome_libro = 'nome libro 1'
-        book_id = '%s-%s' % (autore_libro, nome_libro)
+        author = 'Rudolf Steiner'
+        name = 'Theosophy'
+        b = Book.objects.create(name=name, author=author)
+        b.chapter_set.create(text="xontenuyo cap 1", title="cap 1", number=1)
 
-        response = self.client.get('/admin/sample/book/%s/' % book_id)
+        response = self.client.get('/admin/sample/book/%s/' % b.pk)
         self.assertEqual(response.status_code, 200)
-
-        self.assertEqual(book_id, response.context['object_id'])
+        self.assertEqual(b.pk, response.context['object_id'])
         self.assertEqual("Change book", response.context['title'])
 
-
-        # Don't change nothing, simple try post data:
-
         post_data = {
-            'name': nome_libro,
-            'author': autore_libro ,
-            'chapter_set-TOTAL_FORMS': u'3',
+            'name': name,
+            'author': author,
+            'chapter_set-TOTAL_FORMS': u'0',
             'chapter_set-INITIAL_FORMS': u'0',
             'chapter_set-MAX_NUM_FORMS': u'',
-
-            'chapter_set-0-book': book_id,
-            'chapter_set-0-number': u'',
-            'chapter_set-0-title': u'',
-            'chapter_set-0-text': u'',
-            'chapter_set-1-book': book_id,
-            'chapter_set-1-number': u'',
-            'chapter_set-1-title': u'',
-            'chapter_set-1-text': u'',
-            'chapter_set-2-book': book_id,
-            'chapter_set-2-number': u'',
-            'chapter_set-2-title': u'',
-            'chapter_set-2-text': u'',
-
             '_save': 'Save',
         }
 
-        response = self.client.post('/admin/sample/book/%s/' % book_id, post_data)
+        response = self.client.post('/admin/sample/book/%s/' % b.pk, post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["location"], 'http://testserver/admin/sample/book/')
 
-        self.assertEqual('Select book to change', response.context['title'])
+        # Don't change nothing, simple try post data:
+        post_data.update({
+            'chapter_set-TOTAL_FORMS': u'1',
+            'chapter_set-0-book': b.pk,
+            'chapter_set-0-number': u'',
+            'chapter_set-0-title': u'',
+            'chapter_set-0-text': u'',
+        })
+        response = self.client.post('/admin/sample/book/%s/' % b.pk, post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["location"], 'http://testserver/admin/sample/book/')
+
+
+class FormTest(TestCase):
+
+    def test_empty(self):
+        FormSet = modelformset_factory(Chapter)
+        formset = FormSet({
+            'form-TOTAL_FORMS': u'0',
+            'form-INITIAL_FORMS': u'0',
+            'form-MAX_NUM_FORMS': u'',
+        })
+        formset.save()
+
+    def test_one_without_values(self):
+        FormSet = modelformset_factory(Chapter)
+        formset = FormSet({
+            'form-TOTAL_FORMS': u'1',
+            'form-INITIAL_FORMS': u'0',
+            'form-MAX_NUM_FORMS': u'',
+            'form-0-book': u'',
+            'form-0-number': u'',
+            'form-0-title': u'',
+            'form-0-text': u'',
+        })
+        formset.save()

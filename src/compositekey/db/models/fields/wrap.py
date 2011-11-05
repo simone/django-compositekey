@@ -9,6 +9,8 @@ def wrap_meta_prepare(opts, original_prepare):
     opts._lazy_prepare_field_actions = []
     def _prepare(model):
         for prepare_action in getattr(opts, "_lazy_prepare_field_actions", []): prepare_action()
+        opts._lazy_prepare_field_actions = []
+        del opts._lazy_prepare_field_actions
         original_prepare(model)
     _prepare._sign = "composite"
     return _prepare
@@ -34,7 +36,7 @@ def set_composite_pk(fields, name="pk"):
         if len(disassemble_pk(value)) == len(fields):
             if hasattr(obj, cache_name):
                 delattr(obj, cache_name)
-                getattr(obj, name)
+                #getattr(obj, name)
     return _set
 
 
@@ -50,23 +52,6 @@ def wrap_save_model(original_save):
     save.alters_data = True
     save._sign = "composite"
     return save
-
-def wrap_init_model(original_init):
-    if hasattr(original_init, "_sign"):
-        return original_init
-
-    def __init__(obj, *args, **kwargs):
-        if len(args)<len(obj._meta.fields):
-            for value, f in zip(args, [f for f in obj._meta.fields if not getattr(f, "not_in_db", False)]):
-                kwargs.update({f.attname:value})
-            args = []
-
-        original_init(obj, *args, **kwargs)
-
-        # setup pk cache
-        obj.pk
-    __init__._sign = "composite"
-    return __init__
 
 def prepare_hidden_key_field(model, field, ext={}, prefix="composite"):
     default = ext.get(field.name, {})

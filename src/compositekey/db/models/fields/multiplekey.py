@@ -1,16 +1,17 @@
-from compositekey.db.models.sql.column import MultiColumn
-
 __author__ = 'aldaran'
 
 from django.utils.translation import ugettext_lazy as _
-from django.db.models.fields import Field
+from django.db.models.fields import Field, AutoField
 
 from compositekey.db.models.fields.wrap import *
+from compositekey.db.models.base import wrap_init_model
 from compositekey.patch import django_compositekey_patch
 from compositekey.utils import disassemble_pk
+from compositekey.db.models.sql.column import MultiColumn
+
 __all__ = ['MultipleFieldPrimaryKey',]
 
-class MultipleFieldPrimaryKey(Field):
+class MultipleFieldPrimaryKey(AutoField):
     description = _("Composite Primary Keys")
 
     empty_strings_allowed = False
@@ -37,17 +38,23 @@ class MultipleFieldPrimaryKey(Field):
         pass
 
     def get_prep_value(self, value):
+        if isinstance(value, (list, tuple)):
+            return value
         return [field.get_prep_value(val) for field, val in zip(self.get_key_fields(), disassemble_pk(value))]
+
+    def get_db_prep_lookup(self, lookup_type, value, connection, prepared=False):
+        ret = super(MultipleFieldPrimaryKey, self).get_db_prep_lookup(lookup_type, value, connection, prepared=prepared)
+        return ret
+
+    def get_prep_lookup(self, lookup_type, value, **kwargs):
+        ret = super(MultipleFieldPrimaryKey, self).get_prep_lookup(lookup_type, value, **kwargs)
+        return ret
 
     def contribute_to_class(self, cls, name):
         super(MultipleFieldPrimaryKey, self).contribute_to_class(cls, name)
         opts = cls._meta
         if not self in opts.local_fields: return
 
-        assert not getattr(cls._meta, "has_composite_primarykeys_field", False), \
-               "A model can't have more than one MultipleFieldPrimaryKey."
-        assert not cls._meta.has_auto_field, \
-               "A model can't have one MultipleFieldPrimaryKey or AutoField."
 
         opts.enable_composite = True
         cls._meta._prepare = wrap_meta_prepare(cls._meta, cls._meta._prepare)
@@ -82,10 +89,8 @@ class MultipleFieldPrimaryKey(Field):
             
         cls._meta._lazy_prepare_field_actions.append(lazy_init)
 
-
-
-    def formfield(self, **kwargs):
-        return None
+#    def formfield(self, **kwargs):
+#        return None
 
     def get_key_fields(self):
         fields = []
