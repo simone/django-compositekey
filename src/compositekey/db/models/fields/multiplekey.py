@@ -83,6 +83,7 @@ class MultipleFieldPrimaryKey(AutoField):
             self.db_type = lambda *args, **kwargs: None
             self.db_index = False
             self.not_in_db = True
+            self.primary_key = True
             
         cls._meta._lazy_prepare_field_actions.append(lazy_init)
 

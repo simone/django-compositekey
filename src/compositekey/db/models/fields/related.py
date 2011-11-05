@@ -53,8 +53,7 @@ def wrap_fk_monkey_patch(ori_init, ori_contribute_to_class):
                     self.db_type = lambda *args, **kwargs: None
                     self.db_index = False
                     self.get_prep_value = lambda self, value: value
-
-                    #get_prep_lookup
+                    self.primary_key = True
 
                 # hack clear cache in related field, self.rel is not ready to call get_related_field()
                 for _cache_name in ["_name_map", "_related_many_to_many_cache", "_related_objects_cache", "_m2m_cache", "_field_cache"]:
