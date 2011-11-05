@@ -6,7 +6,6 @@ SEPARATOR = getattr(settings, "SELECT_IN_SQL_SEPARATOR",   '#')
 
 service = {}
 
-
 class MultipleColumnsIN(object):
     def __init__(self, cols, values):
         self.cols = cols

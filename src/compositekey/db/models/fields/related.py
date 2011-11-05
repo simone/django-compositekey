@@ -7,8 +7,6 @@ from compositekey.db.models.sql.column import MultiColumn
 
 __all__ = ['activate_fk_monkey_patch',]
 
-def get_prep_value(self, value):
-    return [field.get_prep_value(val) for field, val in zip(self.fields, disassemble_pk(value))]
 
 def wrap_fk_monkey_patch(ori_init, ori_contribute_to_class):
 
@@ -54,8 +52,8 @@ def wrap_fk_monkey_patch(ori_init, ori_contribute_to_class):
                     self.not_in_db = True
                     self.db_type = lambda *args, **kwargs: None
                     self.db_index = False
+                    self.get_prep_value = lambda self, value: value
 
-                    self.get_prep_value = get_prep_value
                     #get_prep_lookup
 
                 # hack clear cache in related field, self.rel is not ready to call get_related_field()

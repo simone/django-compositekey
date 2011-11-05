@@ -28,6 +28,7 @@ def wrap_make_atom(original_make_atom):
                 field_sql = name.sql_for_columns(_lvalue, qn, connection)
                 if hasattr(field_sql, "make_atoms"):
                     return field_sql.make_atoms(_params, _lookup_type, _value_annot, qn, connection)
+
         return original_make_atom(self, child, qn, connection)
 
     make_atom._sign = "monkey patch by compositekey"

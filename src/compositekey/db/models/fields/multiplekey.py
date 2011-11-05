@@ -6,7 +6,6 @@ from django.db.models.fields import Field, AutoField
 from compositekey.db.models.fields.wrap import *
 from compositekey.db.models.base import wrap_init_model
 from compositekey.patch import django_compositekey_patch
-from compositekey.utils import disassemble_pk
 from compositekey.db.models.sql.column import MultiColumn
 
 __all__ = ['MultipleFieldPrimaryKey',]
@@ -38,9 +37,7 @@ class MultipleFieldPrimaryKey(AutoField):
         pass
 
     def get_prep_value(self, value):
-        if isinstance(value, (list, tuple)):
-            return value
-        return [field.get_prep_value(val) for field, val in zip(self.get_key_fields(), disassemble_pk(value))]
+        return value
 
     def get_db_prep_lookup(self, lookup_type, value, connection, prepared=False):
         ret = super(MultipleFieldPrimaryKey, self).get_db_prep_lookup(lookup_type, value, connection, prepared=prepared)

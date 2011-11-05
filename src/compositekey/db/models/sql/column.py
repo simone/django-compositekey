@@ -1,9 +1,9 @@
 import datetime
 from itertools import repeat
 from django.db.models.query import EmptyResultSet
+from django.db.models.query_utils import QueryWrapper
 from compositekey.db.models.sql.wherein import MultipleColumnsIN
-from compositekey.utils import disassemble_pk
-
+from compositekey.utils import *
 __author__ = 'aldaran'
 
 
@@ -13,34 +13,35 @@ class Atoms(object):
         self.sql_colums = sql_colums
 
     def make_atoms(self, params, lookup_type, value_annot, qn, connection):
+
+        if hasattr(params, 'as_sql'):
+            extra, params = params.as_sql(qn, connection)
+            print "??", extra, self.sql_colums, params
+        else:
+            extra = ''
+
+        params = [disassemble_pk(v) for v in params]
+        params  = [[field.get_prep_value(part) for field, part in zip(self.fields, value)] for value in params]
+
         # regolarize params
-        if len(params)>0 and len(params[0]) < len(self.sql_colums):
-            params = params[0]
+        #if len(params)>0 and len(params[0]) < len(self.sql_colums):
+        #    params = params[0]
 
         if lookup_type == 'in':
             return MultipleColumnsIN(self.sql_colums, params).as_sql(qn, connection)
-        if lookup_type in ['iexact']: # todo we have to be sure!
-            params = [[field.get_prep_value(val) for field, val in zip(self.fields, disassemble_pk(params[0]))]]
 
-
-        atoms = zip(*[self.make_atom(field_sql, param, lookup_type, value_annot, qn, connection) for field_sql, param in zip(self.sql_colums, zip(*params))])
+        atoms = zip(*[self.make_atom(field_sql, extra, param, lookup_type, value_annot, qn, connection) for field_sql, param in zip(self.sql_colums, zip(*params))])
         if not atoms: return "", []
         sql, new_params = atoms
 
         # [0] is a bad smell
         return " AND ".join(sql), zip(*new_params)[0]
 
-    def make_atom(self, field_sql, params, lookup_type, value_annot, qn, connection):
+    def make_atom(self, field_sql, extra, params, lookup_type, value_annot, qn, connection):
         if value_annot is datetime.datetime:
             cast_sql = connection.ops.datetime_cast_sql()
         else:
             cast_sql = '%s'
-
-        if hasattr(params, 'as_sql'):
-            extra, params = params.as_sql(qn, connection)
-            cast_sql = ''
-        else:
-            extra = ''
 
         if (len(params) == 1 and params[0] == '' and lookup_type == 'exact'
             and connection.features.interprets_empty_strings_as_nulls):

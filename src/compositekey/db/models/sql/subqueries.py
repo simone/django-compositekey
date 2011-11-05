@@ -5,6 +5,7 @@ from django.db.models.sql.constants import *
 from django.db.models.sql.where import AND
 
 from compositekey.db.models.sql.wherein import MultipleColumnsIN
+from compositekey.utils import *
 
 __all__ =["activate_delete_monkey_patch"]
 
@@ -28,12 +29,11 @@ def wrap_delete_batch(original_delete_batch):
             off_list = pk_list[offset : offset + GET_ITERATOR_CHUNK_SIZE]
 
             # delete where in using concatenate features
-            where.add(MultipleColumnsIN([f.column for f in field_keys], [field.get_prep_value(value) for value in off_list]), AND)
+            values = [disassemble_pk(value) for value in off_list]
+            values = [[field.get_prep_value(part) for field, part in zip(field_keys, value)] for value in values]
+            where.add(MultipleColumnsIN([f.column for f in field_keys], values), AND)
 
             obj.do_query(obj.model._meta.db_table, where, using=using)
-        
-            from django.db import connection
-            print "last query is: ", connection.queries[-1]
 
 
     delete_batch._sign = "monkey patch by compositekey"

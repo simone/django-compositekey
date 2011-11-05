@@ -114,6 +114,19 @@ class ModelTest(TestCase):
         self.assertEqual(len(Book.objects.filter(pk=r.pk)), 1)
         self.assertEqual(BookReal.objects.get(pk=r.pk).pk, 'Simone-REAL')
 
+    def test_delete_chapters(self):
+        b = Book.objects.create(name="Orgoglio e Pregiudizio", author="Delete")
+        b.delete()
+        self.assertEqual(0, Book.objects.filter(name="Orgoglio e Pregiudizio", author="Delete").count())
+        b = Book.objects.create(name="Orgoglio e Pregiudizio", author="Austen")
+        self.assertEqual(b.pk, 'Austen-Orgoglio e Pregiudizio')
+        c1 = b.chapter_set.create(number=1, title="Primo", text="Ciao")
+        c2 = b.chapter_set.create(number=2, title="Secondo", text="Ciao")
+        self.assertEqual(c1.pk, 'Austen-Orgoglio e Pregiudizio-1')
+        self.assertEqual(c2.pk, 'Austen-Orgoglio e Pregiudizio-2')
+        self.assertEqual(2, b.chapter_set.count())
+        c1.delete()
+        self.assertEqual(1, b.chapter_set.count())
 
 
 class UtilsTest(TestCase):
