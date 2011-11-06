@@ -36,11 +36,10 @@ class Biografy(models.Model):
 class AbstractChapter(models.Model):
     id = db.MultipleFieldPrimaryKey(fields=["book", "number"])
     book = models.ForeignKey(Book, to_field="id",
-                             fields_ext={
+        fields_ext={
             "author": {"db_column" :"b_author", "name" : "_author"},
             "name"  : {"db_column" :"b_name"},
-    },
-    related_name="chapter_set")
+        }, related_name="chapter_set")
     number = models.PositiveSmallIntegerField()
     title = models.CharField(max_length=100)
 

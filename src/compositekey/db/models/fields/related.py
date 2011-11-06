@@ -2,7 +2,7 @@ __author__ = 'aldaran'
 
 from django.db.models.fields.related import ForeignKey, ManyToManyRel
 from compositekey.db.models.fields.wrap import *
-from compositekey.db.models.base import wrap_init_model
+from compositekey.db.models.base import patched_model_init
 from compositekey.db.models.sql.column import MultiColumn
 
 __all__ = ['activate_fk_monkey_patch',]
@@ -29,7 +29,7 @@ def wrap_fk_monkey_patch(ori_init, ori_contribute_to_class):
                     opts.composite_special_fields = getattr(opts, "composite_special_fields", [])
                     opts.composite_special_fields.append(self)
 
-                    cls.__init__ = wrap_init_model(cls.__init__) # adding reset PK cache
+                    cls.__init__ = patched_model_init # adding reset PK cache
 
                     new_fields = [prepare_hidden_key_field(cls, f, self.fields_ext, prefix=name) for f in related_field.get_key_fields()]
                     for f in new_fields: cls.add_to_class(f.name, f)

@@ -46,4 +46,6 @@ def activate_get_fields_with_model_monkey_patch():
         Options.get_fields_with_model = get_fields_with_model
         Options.init_name_map = init_name_map
         Options._fill_fields_cache = _fill_fields_cache
-    
+
+        # setup DB/fields
+        Options.db_fields = property(lambda self: [f for f in self.fields if not getattr(f, "not_in_db", False)])

@@ -4,7 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models.fields import Field, AutoField
 
 from compositekey.db.models.fields.wrap import *
-from compositekey.db.models.base import wrap_init_model
+from compositekey.db.models.base import patched_model_init
 from compositekey.patch import django_compositekey_patch
 from compositekey.db.models.sql.column import MultiColumn
 
@@ -61,11 +61,11 @@ class MultipleFieldPrimaryKey(AutoField):
         cls._meta.composite_special_fields.append(self)
 
         cls.save = wrap_save_model(cls.save) # adding reset PK cache
-        cls.__init__ = wrap_init_model(cls.__init__) # adding reset PK cache
+        cls.__init__ = patched_model_init # adding reset PK cache
 
         def lazy_init():
-            fields = self.get_key_fields()
-            names = [f.name for f in fields]
+            self.fields = self.get_key_fields()
+            names = [f.name for f in self.fields]
             cls._meta.ordering = cls._meta.ordering or names
 
             # TODO: better add primary key = () and not unique
@@ -73,13 +73,13 @@ class MultipleFieldPrimaryKey(AutoField):
 
             if names not in cls._meta.unique_together:
                 cls._meta.unique_together.append(names)
-            for field in fields: field.db_index=True
+            for field in self.fields: field.db_index=True
 
             # get/set PK propery
-            setattr(cls, cls._meta.pk.attname, property(get_composite_pk(fields), set_composite_pk(fields)))
+            setattr(cls, cls._meta.pk.attname, property(get_composite_pk(self.fields), set_composite_pk(self.fields)))
 
             # hack db_column for joins see compiler
-            self.column = MultiColumn(fields)
+            self.column = MultiColumn(self.fields)
             self.db_type = lambda *args, **kwargs: None
             self.db_index = False
             self.not_in_db = True
