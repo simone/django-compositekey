@@ -6,7 +6,6 @@ import operator
 
 @receiver(class_prepared)
 def prepare_model_and_meta(sender, **kwargs):
-    print sender, "Prepared finished!"
     opts = sender._meta
     unique_together = []
     for field_constraints in opts.unique_together:
