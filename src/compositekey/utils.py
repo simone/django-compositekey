@@ -6,6 +6,7 @@ __all__ = ["assemble_pk", "disassemble_pk", "SEP", "ESCAPE_CHAR", "NONE_CHAR"]
 
 SEP, ESCAPE_CHAR, NONE_CHAR = getattr(settings, "COMPOSITE_PK_SEPARATOR_ESCAPE", '-.N')
 
+
 def assemble_pk(*values):
 
     # no ammissible multiplekey with null or blank values
@@ -17,7 +18,7 @@ def assemble_pk(*values):
     for value in values:
 
         if not value == None:
-            value = str(value)
+            value = unicode(value)
 
             for special_char in (ESCAPE_CHAR, SEP, NONE_CHAR):
                 if special_char in value:
@@ -36,7 +37,7 @@ def disassemble_pk(comp_pk):
     """
 
     if comp_pk is not None:
-        comp_pk = str(comp_pk)
+        comp_pk = unicode(comp_pk)
         result = []
         curr_index = 0
         index = 0
@@ -69,5 +70,5 @@ def disassemble_pk(comp_pk):
                 value = value.replace(ESCAPE_CHAR+NONE_CHAR, NONE_CHAR)
                 result.append(value)
 
-        return result
+        return [unicode(x) for x in result]
     return []

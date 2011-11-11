@@ -22,7 +22,7 @@ class MultipleFieldPrimaryKey(AutoField):
         self.is_composite_primarykeys_field = True
         kwargs['primary_key'] = True
         self._field_names = kwargs.pop('fields', [])
-        assert isinstance(self._field_names, list) and len(self._field_names) > 0, \
+        assert isinstance(self._field_names, (list, tuple)) and len(self._field_names) > 0, \
                "%ss must have fields=[..]." % self.__class__.__name__
         kwargs['blank'] = True
         super(MultipleFieldPrimaryKey, self).__init__(*args, **kwargs)
