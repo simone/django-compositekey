@@ -7,10 +7,13 @@ def wrap_meta_prepare(opts, original_prepare):
         return original_prepare
 
     opts._lazy_prepare_field_actions = []
+    opts._lazy_prepare_fk_actions = []
     def _prepare(model):
         for prepare_action in getattr(opts, "_lazy_prepare_field_actions", []): prepare_action()
+        for prepare_action in getattr(opts, "_lazy_prepare_fk_actions", []): prepare_action()
         opts._lazy_prepare_field_actions = []
         del opts._lazy_prepare_field_actions
+        del opts._lazy_prepare_fk_actions
         original_prepare(model)
     _prepare._sign = "composite"
     return _prepare
