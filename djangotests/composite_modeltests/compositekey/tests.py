@@ -146,7 +146,7 @@ class UtilsTest(TestCase):
     def test_empty(self):
         #self.assertEquals(None, assemble_pk(None))
         self.assertEquals(None, assemble_pk(None))#NONE_CHAR
-        self.assertEquals(None, assemble_pk(''))
+        self.assertEquals('', assemble_pk(''))
         self.assertEquals([], disassemble_pk(None))
         self.assertEquals([''], disassemble_pk(''))
 
