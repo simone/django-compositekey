@@ -8,7 +8,9 @@ SEP, ESCAPE_CHAR, NONE_CHAR = getattr(settings, "COMPOSITE_PK_SEPARATOR_ESCAPE",
 
 
 def assemble_pk(*values):
-
+    if len(values) == 1:
+        return values[0]
+    
     # no ammissible multiplekey with null or blank values
     for val in values:
         if val in ['', None]:
