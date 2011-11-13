@@ -12,7 +12,9 @@ class MultipleColumnsIN(object):
         self.values = values
 
     def as_sql(self, qn, connection):
-        return service.get(connection.vendor, UseConcat)(self.cols, self.values).as_sql(qn, connection)
+        r =  service.get(connection.vendor, UseConcat)(self.cols, self.values).as_sql(qn, connection)
+        return r
+
 
 
 class UseConcat(object):
@@ -37,9 +39,13 @@ class UseConcat(object):
         col_sep = self.quote_v(SEPARATOR).join([self.concat]*2)
 
         if isinstance(self.cols, (list, tuple)):
-            # there are more than one column
-            column = col_sep.join([self.cq % qn(c) for c in self.cols])
-            params = [SEPARATOR.join([self.quote_v(v) for v in val]) for val in self.values]
+            if len(self.cols) > 1:
+                # there are more than one column
+                column = col_sep.join([self.cq % qn(c) for c in self.cols])
+                params = [SEPARATOR.join([self.quote_v(v) for v in val]) for val in self.values]
+            else: # multiple, but one only column!
+                column = qn(self.cols[0])
+                params = [self.quote_v(v) for v in zip(*self.values)[0]]
         else:
             column = self.cq % qn(self.cols)
             params = [self.quote_v(v) for v in self.values]
