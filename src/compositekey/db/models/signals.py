@@ -13,4 +13,9 @@ def prepare_model_and_meta(sender, **kwargs):
         fields = [f.fields if hasattr(f, "fields") else [f] for f in fields]
         fields = reduce(operator.add, fields)
         unique_together.append([f.name for f in fields])
-    opts.unique_together = unique_together
+    opts.unique_together = tuple(unique_together)
+
+#    if getattr(opts, "enable_composite", False):
+#        for m2m in opts.local_many_to_many:
+#            m2m.rel.through._meta.enable_composite = True
+
