@@ -18,9 +18,9 @@ GENDER_CHOICES = (
 )
 
 class Person(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("name",))
+    id = db.MultipleFieldPrimaryKey(fields=("name","gender"))
     name = models.CharField(max_length=20)
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, default='M')
 
     def __unicode__(self):
         return self.name

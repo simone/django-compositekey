@@ -3,7 +3,7 @@ from django.db import models
 from compositekey import db
 
 class Author(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("name",))
+    id = db.MultipleFieldPrimaryKey(fields=("name","age"))
     name = models.CharField(max_length=100)
     age = models.IntegerField()
     friends = models.ManyToManyField('self', blank=True)

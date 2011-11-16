@@ -20,6 +20,7 @@ def wrap_get_from_clause(original_get_from_clause):
                 continue
             try:
                 name, alias, join_type, lhs, _lhs_col, _col, nullable = self.query.alias_map[alias]
+                #print name, alias, join_type, lhs, _lhs_col, _col, nullable
                 lhs_cols, cols = _lhs_col.columns if _lhs_col else [],_col.columns if _col else []
             except KeyError:
                 # Extra tables can end up in self.tables, but not in the

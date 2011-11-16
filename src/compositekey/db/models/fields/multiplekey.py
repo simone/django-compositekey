@@ -23,7 +23,7 @@ class MultipleFieldPrimaryKey(AutoField):
         kwargs['primary_key'] = True
         self._field_names = kwargs.pop('fields', [])
         assert isinstance(self._field_names, (list, tuple)) and len(self._field_names) > 0, \
-               "%ss must have fields=[..]." % self.__class__.__name__
+               "%ss must have fields=[..] with at least 2 fields" % self.__class__.__name__
         kwargs['blank'] = True
         super(MultipleFieldPrimaryKey, self).__init__(*args, **kwargs)
 
@@ -65,6 +65,9 @@ class MultipleFieldPrimaryKey(AutoField):
 
         def lazy_init():
             self.fields = self.get_key_fields()
+            assert isinstance(self.fields, (list, tuple)) and len(self.fields) > 1, \
+               "%s must have a %s with at least 2 fields (%s)" % (cls.__name__, self.__class__.__name__,
+                                                                  ",".join([f.name for f in self.fields]))
             names = [f.name for f in self.fields]
             cls._meta.ordering = cls._meta.ordering or names
 

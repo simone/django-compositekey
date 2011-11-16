@@ -52,9 +52,9 @@ class FastCarManager(models.Manager):
         return super(FastCarManager, self).get_query_set().filter(top_speed__gt=150)
 
 class Car(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("name",))
+    id = db.MultipleFieldPrimaryKey(fields=("name","mileage"))
     name = models.CharField(max_length=10)
-    mileage = models.IntegerField()
+    mileage = models.IntegerField(default=0)
     top_speed = models.IntegerField(help_text="In miles per hour.")
     cars = models.Manager()
     fast_cars = FastCarManager()

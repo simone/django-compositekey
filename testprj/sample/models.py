@@ -97,7 +97,7 @@ class OldChapter(AbstractOldChapter):
     text = models.CharField(max_length=100)
 
 class Employee(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("employee_code",))
+    id = db.MultipleFieldPrimaryKey(fields=("employee_code", "last_name"))
     employee_code = models.IntegerField(db_column = 'code')
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=20)

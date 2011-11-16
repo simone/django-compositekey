@@ -28,8 +28,9 @@ class RChild(R):
 
 
 class A(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("name",))
+    id = db.MultipleFieldPrimaryKey(fields=("name", "name2"))
     name = models.CharField(max_length=30)
+    name2 = models.CharField(max_length=30, default="COMPOSITE")
 
     auto = models.ForeignKey(R, related_name="auto_set")
     auto_nullable = models.ForeignKey(R, null=True,

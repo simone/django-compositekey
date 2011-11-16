@@ -36,9 +36,9 @@ def set_composite_pk(fields, name="pk"):
         for field, val in zip(fields, values):
             setattr(obj, field.name, val)
         # reset pk cache only you are not deleting the model
-        if len(disassemble_pk(value)) == len(fields):
-            if hasattr(obj, cache_name):
-                delattr(obj, cache_name)
+        #if len(disassemble_pk(value)) == len(fields):
+        if hasattr(obj, cache_name):
+            delattr(obj, cache_name)
                 #getattr(obj, name)
     return _set
 
