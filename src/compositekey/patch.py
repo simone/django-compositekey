@@ -17,3 +17,16 @@ def django_compositekey_patch():
     activate_get_fields_with_model_monkey_patch()
     activate_insert_query_monkey_patch()
     activate_add_fields_monkey_patch()
+
+    #Oracle and generic backend patches
+    from compositekey.db.backends.__init__ import activate_sequence_list_monkey_patch
+    activate_sequence_list_monkey_patch()
+    from compositekey.db.backends.creations import activate_sql_create_model_monkey_patch, activate_sql_indexes_for_model_monkey_patch
+    activate_sql_create_model_monkey_patch()
+    activate_sql_indexes_for_model_monkey_patch()
+    from compositekey.db.backends.oracle.base import activate_sequence_reset_sql_monkey_patch
+    activate_sequence_reset_sql_monkey_patch()
+    from compositekey.core.management.sql import activate_sql_delete_monkey_patch
+    activate_sql_delete_monkey_patch()
+
+

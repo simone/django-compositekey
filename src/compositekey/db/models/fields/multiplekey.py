@@ -54,6 +54,7 @@ class MultipleFieldPrimaryKey(AutoField):
 
 
         opts.enable_composite = True
+        opts.has_auto_field = False
         cls._meta._prepare = wrap_meta_prepare(cls._meta, cls._meta._prepare)
         cls._meta.has_composite_primarykeys_field = True
         cls._meta.composite_primarykeys_field = self

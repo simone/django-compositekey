@@ -1,0 +1,61 @@
+Index: /env/django1.4/lib/python2.7/site-packages/trunk/django/db/backends/oracle/base.py
+===================================================================
+--- /env/django1.4/lib/python2.7/site-packages/trunk/django/db/backends/oracle/base.py	(revisione 17068)
++++ /env/django1.4/lib/python2.7/site-packages/trunk/django/db/backends/oracle/base.py	(copia locale)
+@@ -302,7 +302,7 @@
+         output = []
+         query = _get_sequence_reset_sql()
+         for model in model_list:
+-            for f in model._meta.local_fields:
++            for f in [f for f in model._meta.local_fields if not getattr(f, "not_in_db", False)]:
+                 if isinstance(f, models.AutoField):
+                     table_name = self.quote_name(model._meta.db_table)
+                     sequence_name = self._get_sequence_name(model._meta.db_table)
+Index: /env/django1.4/lib/python2.7/site-packages/trunk/django/db/backends/__init__.py
+===================================================================
+--- /env/django1.4/lib/python2.7/site-packages/trunk/django/db/backends/__init__.py	(revisione 17068)
++++ /env/django1.4/lib/python2.7/site-packages/trunk/django/db/backends/__init__.py	(copia locale)
+@@ -895,7 +895,7 @@
+                     continue
+                 if not router.allow_syncdb(self.connection.alias, model):
+                     continue
+-                for f in model._meta.local_fields:
++                for f in [f for f in model._meta.local_fields if not getattr(f, "not_in_db", False)]:
+                     if isinstance(f, models.AutoField):
+                         sequence_list.append({'table': model._meta.db_table, 'column': f.column})
+                         break # Only one AutoField is allowed per model, so don't bother continuing.
+Index: /env/django1.4/lib/python2.7/site-packages/trunk/django/db/backends/creation.py
+===================================================================
+--- /env/django1.4/lib/python2.7/site-packages/trunk/django/db/backends/creation.py	(revisione 17068)
++++ /env/django1.4/lib/python2.7/site-packages/trunk/django/db/backends/creation.py	(copia locale)
+@@ -38,7 +38,7 @@
+         table_output = []
+         pending_references = {}
+         qn = self.connection.ops.quote_name
+-        for f in opts.local_fields:
++        for f in [f for f in opts.local_fields if not getattr(f, "not_in_db", False)]:
+             col_type = f.db_type(connection=self.connection)
+             tablespace = f.db_tablespace or opts.db_tablespace
+             if col_type is None:
+@@ -141,7 +141,7 @@
+         if not model._meta.managed or model._meta.proxy:
+             return []
+         output = []
+-        for f in model._meta.local_fields:
++        for f in [f for f in model._meta.local_fields if not getattr(f, "not_in_db", False)]:
+             output.extend(self.sql_indexes_for_field(model, f, style))
+         return output
+ 
+Index: /env/django1.4/lib/python2.7/site-packages/trunk/django/core/management/sql.py
+===================================================================
+--- /env/django1.4/lib/python2.7/site-packages/trunk/django/core/management/sql.py	(revisione 17068)
++++ /env/django1.4/lib/python2.7/site-packages/trunk/django/core/management/sql.py	(copia locale)
+@@ -78,7 +78,7 @@
+         if cursor and connection.introspection.table_name_converter(model._meta.db_table) in table_names:
+             # The table exists, so it needs to be dropped
+             opts = model._meta
+-            for f in opts.local_fields:
++            for f in [f for f in opts.local_fields if not getattr(f, "not_in_db", False)]:
+                 if f.rel and f.rel.to not in to_delete:
+                     references_to_delete.setdefault(f.rel.to, []).append( (model, f) )
+ 

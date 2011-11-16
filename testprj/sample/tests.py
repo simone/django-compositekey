@@ -62,12 +62,12 @@ class ModelTest(TestCase):
         com_pk = assemble_pk("Libro sulle compositeKey", "Simone")
         book = Book.objects.create(pk=com_pk)
         for n in range(10):
-            book.chapter_set.create(number=n)
-        list(Book.objects.filter(chapter_set__number=3))
+            book.chapter_set.create(num=n)
+        list(Book.objects.filter(chapter_set__num=3))
 
 
     def test_create_chapter(self):
-        chapter = Chapter(number=1, title="Introduzione")
+        chapter = Chapter(num=1, title="Introduzione")
         chapter.book = Book.objects.get_or_create(name="Libro sulla teoria dei colori", author="Simone")[0]
         chapter.save()
         self.assertIsNotNone(chapter)
@@ -78,7 +78,7 @@ class ModelTest(TestCase):
         self.assertIsNotNone(chapter)
 
     def test_create_chapter_direct(self):
-        chapter = Chapter(number=1, title="Introduzione", book = Book.objects.get_or_create(name="Libro sulla teoria dei colori", author="Simone")[0])
+        chapter = Chapter(num=1, title="Introduzione", book = Book.objects.get_or_create(name="Libro sulla teoria dei colori", author="Simone")[0])
         chapter.save()
         self.assertIsNotNone(chapter)
         self.assertIsNotNone(chapter.book)
@@ -88,7 +88,7 @@ class ModelTest(TestCase):
         self.assertIsNotNone(chapter)
 
     def test_chapters_book_reverse(self):
-        chapter = Chapter(number=1, title="Introduzione", book = Book.objects.get_or_create(name="Libro sulla teoria dei colori", author="Simone")[0])
+        chapter = Chapter(num=1, title="Introduzione", book = Book.objects.get_or_create(name="Libro sulla teoria dei colori", author="Simone")[0])
         chapter.save()
         chapter.book.chapter_set.all()
 
@@ -98,13 +98,13 @@ class ModelTest(TestCase):
     def test_doc_1(self):
         b = Book.objects.create(name="Orgoglio e Pregiudizio", author="Austen")
         self.assertEqual(b.pk, 'Austen-Orgoglio e Pregiudizio')
-        c = b.chapter_set.create(number=1, title="Primo", text="Ciao")
+        c = b.chapter_set.create(num=1, title="Primo", text="Ciao")
         self.assertEqual(c.pk, 'Austen-Orgoglio e Pregiudizio-1')
         b2 = Book.objects.get(pk=b.pk)
         self.assertEqual(b2.pk, 'Austen-Orgoglio e Pregiudizio')
         c2 = Chapter.objects.get(pk=c.pk)
         self.assertEqual(c2.pk, 'Austen-Orgoglio e Pregiudizio-1')
-        c3 = b.chapter_set.get(number=1)
+        c3 = b.chapter_set.get(num=1)
         self.assertEqual(c3.pk, 'Austen-Orgoglio e Pregiudizio-1')
 
     def test_doc_2(self):
@@ -120,8 +120,8 @@ class ModelTest(TestCase):
         self.assertEqual(0, Book.objects.filter(name="Orgoglio e Pregiudizio", author="Delete").count())
         b = Book.objects.create(name="Orgoglio e Pregiudizio", author="Austen")
         self.assertEqual(b.pk, 'Austen-Orgoglio e Pregiudizio')
-        c1 = b.chapter_set.create(number=1, title="Primo", text="Ciao")
-        c2 = b.chapter_set.create(number=2, title="Secondo", text="Ciao")
+        c1 = b.chapter_set.create(num=1, title="Primo", text="Ciao")
+        c2 = b.chapter_set.create(num=2, title="Secondo", text="Ciao")
         self.assertEqual(c1.pk, 'Austen-Orgoglio e Pregiudizio-1')
         self.assertEqual(c2.pk, 'Austen-Orgoglio e Pregiudizio-2')
         self.assertEqual(2, b.chapter_set.count())
@@ -171,7 +171,7 @@ class AdminTest(TestCase):
         author = 'Rudolf Steiner'
         name = 'Theosophy'
         b = Book.objects.create(name=name, author=author)
-        b.chapter_set.create(text="xontenuyo cap 1", title="cap 1", number=1)
+        b.chapter_set.create(text="xontenuyo cap 1", title="cap 1", num=1)
 
         response = self.client.get('/admin/sample/book/%s/' % b.pk)
         self.assertEqual(response.status_code, 200)
@@ -195,7 +195,7 @@ class AdminTest(TestCase):
         post_data.update({
             'chapter_set-TOTAL_FORMS': u'1',
             'chapter_set-0-book': b.pk,
-            'chapter_set-0-number': u'',
+            'chapter_set-0-num': u'',
             'chapter_set-0-title': u'',
             'chapter_set-0-text': u'',
         })
@@ -222,7 +222,7 @@ class FormTest(TestCase):
             'form-INITIAL_FORMS': u'0',
             'form-MAX_NUM_FORMS': u'',
             'form-0-book': u'',
-            'form-0-number': u'',
+            'form-0-num': u'',
             'form-0-title': u'',
             'form-0-text': u'',
         })
