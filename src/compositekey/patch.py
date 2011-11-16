@@ -1,4 +1,14 @@
+from django.conf import settings
+
 __author__ = 'aldaran'
+
+def check_database_property(property, value):
+
+    for name in settings.DATABASES:
+            if settings.DATABASES[name][property].strip() == value:
+                return True
+    return False
+
 
 def django_compositekey_patch():
     from compositekey.db.models.sql.query import activate_add_fields_monkey_patch
@@ -24,8 +34,11 @@ def django_compositekey_patch():
     from compositekey.db.backends.creations import activate_sql_create_model_monkey_patch, activate_sql_indexes_for_model_monkey_patch
     activate_sql_create_model_monkey_patch()
     activate_sql_indexes_for_model_monkey_patch()
-    #from compositekey.db.backends.oracle.base import activate_sequence_reset_sql_monkey_patch
-    #activate_sequence_reset_sql_monkey_patch()
+
+    if check_database_property('ENGINE', 'django.db.backends.oracle'):
+        from compositekey.db.backends.oracle.base import activate_sequence_reset_sql_monkey_patch
+        activate_sequence_reset_sql_monkey_patch()
+
     from compositekey.core.management.sql import activate_sql_delete_monkey_patch
     activate_sql_delete_monkey_patch()
 
