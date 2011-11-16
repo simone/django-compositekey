@@ -49,14 +49,15 @@ def wrap_save_model(original_save):
     def save(obj, force_insert=False, force_update=False, using=None):
         ret = original_save(obj, force_insert=force_insert, force_update=force_update, using=using)
         # reset pk cache
-        del obj._composite_pk_cache
+        if hasattr(obj, "_composite_pk_cache"):
+            del obj._composite_pk_cache 
         obj.pk
         return ret
     save.alters_data = True
     save._sign = "composite"
     return save
 
-def prepare_hidden_key_field(model, field, ext={}, prefix="composite"):
+def prepare_hidden_key_field(model, field, blank, null, ext={}, prefix="composite"):
     default = ext.get(field.name, {})
     import copy
     new_field = copy.deepcopy(field)
@@ -68,6 +69,8 @@ def prepare_hidden_key_field(model, field, ext={}, prefix="composite"):
     new_field.attname = default.get("attname", "%s_%s" % (prefix, new_field.attname))
     new_field.verbose_name = default.get("verbose_name", "%s %s" % (prefix, new_field.verbose_name))
     new_field.column = default.get("column", "%s_%s" % (prefix, new_field.column))
+    new_field.blank = blank
+    new_field.null = null
 
     # hide formfield (None)
     new_field.formfield = lambda *args, **kwargs : None

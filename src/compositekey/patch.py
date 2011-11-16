@@ -24,8 +24,8 @@ def django_compositekey_patch():
     from compositekey.db.backends.creations import activate_sql_create_model_monkey_patch, activate_sql_indexes_for_model_monkey_patch
     activate_sql_create_model_monkey_patch()
     activate_sql_indexes_for_model_monkey_patch()
-    from compositekey.db.backends.oracle.base import activate_sequence_reset_sql_monkey_patch
-    activate_sequence_reset_sql_monkey_patch()
+    #from compositekey.db.backends.oracle.base import activate_sequence_reset_sql_monkey_patch
+    #activate_sequence_reset_sql_monkey_patch()
     from compositekey.core.management.sql import activate_sql_delete_monkey_patch
     activate_sql_delete_monkey_patch()
 

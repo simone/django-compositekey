@@ -34,7 +34,7 @@ def wrap_fk_monkey_patch(ori_init, ori_contribute_to_class):
 
                     cls.__init__ = patched_model_init # adding reset PK cache
 
-                    new_fields = [prepare_hidden_key_field(cls, f, self.fields_ext, prefix=name) for f in related_field.get_key_fields()]
+                    new_fields = [prepare_hidden_key_field(cls, f, self.blank, self.null, self.fields_ext, prefix=name) for f in related_field.get_key_fields()]
                     for f in new_fields: cls.add_to_class(f.name, f)
                     self.fields = new_fields
 

@@ -1,7 +1,6 @@
 from django.db.models.manager import Manager
 
 __author__ = 'aldaran'
-from django.db.models import query as module
 
 __all__ = ["activate_insert_query_monkey_patch"]
 

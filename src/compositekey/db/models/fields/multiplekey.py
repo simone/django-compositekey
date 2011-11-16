@@ -80,7 +80,7 @@ class MultipleFieldPrimaryKey(AutoField):
             for field in self.fields: field.db_index=True
 
             # get/set PK propery
-            setattr(cls, cls._meta.pk.attname, property(get_composite_pk(self.fields), set_composite_pk(self.fields)))
+            setattr(cls, cls._meta.pk.attname, property(get_composite_pk(self.fields), lambda *x, **y : None))
 
             # hack db_column for joins see compiler
             self.column = MultiColumn(self.fields)

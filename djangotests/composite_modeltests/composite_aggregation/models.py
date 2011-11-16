@@ -19,6 +19,7 @@ class Publisher(models.Model):
         return self.name
 
 class Book(models.Model):
+    id = db.MultipleFieldPrimaryKey(fields=("isbn","name"))
     isbn = models.CharField(max_length=9)
     name = models.CharField(max_length=255)
     pages = models.IntegerField()

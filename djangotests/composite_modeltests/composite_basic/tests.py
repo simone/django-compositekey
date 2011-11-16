@@ -203,7 +203,7 @@ class ModelTest(TestCase):
         self.assertEqual(a8.id, current_id)
         a8.headline = 'Updated article 8'
         a8.save()
-        self.assertEqual(a8.id, 'Updated article 8')
+        self.assertEqual(a8.headline, 'Updated article 8')
 
         # Check that != and == operators behave as expecte on instances
         self.assertTrue(a7 != a8)
@@ -416,7 +416,7 @@ class ModelTest(TestCase):
              "<Article: Fourth article>",
              "<Article: Article 7>",
              "<Article: Updated article 8>"])
-        Article.objects.filter(id__lte=a4.id).delete()
+        Article.objects.filter(headline__lte=a4.headline).delete()
         self.assertQuerysetEqual(Article.objects.all(),
             ["<Article: Second article>",
              "<Article: Third article>",
