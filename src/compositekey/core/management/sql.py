@@ -1,6 +1,5 @@
 from django.core.management import sql
 from django.db import models
-import sys
 
 __author__ = 'fabio'
 
