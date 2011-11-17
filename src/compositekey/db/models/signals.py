@@ -37,6 +37,12 @@ def prepare_model_and_meta(sender, **kwargs):
                 
             sender._default_manager.__class__ = NaturalCompositeManager
 
+    # add special fields to the child
+    for parent, field in sender._meta.parents.items():
+        if hasattr(parent._meta, "composite_special_fields"):
+            sender._meta.composite_special_fields = list(getattr(sender._meta, "composite_special_fields", []))
+            sender._meta.composite_special_fields += list(parent._meta.composite_special_fields)
+            sender._meta.composite_special_fields = set(sender._meta.composite_special_fields)
 
 #    if getattr(opts, "enable_composite", False):
 #        for m2m in opts.local_many_to_many:
