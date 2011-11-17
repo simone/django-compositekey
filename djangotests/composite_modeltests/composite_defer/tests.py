@@ -58,14 +58,16 @@ class DeferTests(TestCase):
         # User values() won't defer anything (you get the full list of
         # dictionaries back), but it still works.
         self.assertEqual(qs.defer("value").values()[0], {
-            'name': u'x1',
+            'name': u'p1',
             'related_second': u'y1',
-            'related_first': u'x1'
+            'related_first': u'x1',
+            'value': u'xx'
         })
         self.assertEqual(qs.only("name").values()[0], {
-            'name': u'x1',
+            'name': u'p1',
             'related_second': u'y1',
-            'related_first': u'x1'
+            'related_first': u'x1',
+            'value': u'xx'
         })
 
         # Using defer() and only() with get() is also valid.
