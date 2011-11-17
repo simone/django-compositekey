@@ -21,7 +21,7 @@ def add_fields(self, field_names, allow_m2m=True):
                     True)
             final_alias = joins[-1]
             col = target.column
-            cols = col.columns if hasattr(col, "columns") else [col]
+            cols = [] if hasattr(col, "columns") else [col]
             for col in cols:
                 if len(joins) > 1:
                     join = self.alias_map[final_alias]
