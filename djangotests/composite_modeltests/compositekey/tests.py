@@ -53,8 +53,7 @@ class ModelTest(TestCase):
 
     def test_select_book_chapter_number(self):
         #opts.get_all_field_names
-        com_pk = assemble_pk("Libro sulle compositeKey", "Simone")
-        book = Book.objects.create(pk=com_pk)
+        book = Book.objects.create(name="Libro sulle compositeKey", author="Simone")
         for n in range(10):
             book.chapter_set.create(num=n)
         list(Book.objects.filter(chapter_set__num=3))

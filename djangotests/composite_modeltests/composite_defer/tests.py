@@ -25,30 +25,31 @@ class DeferTests(TestCase):
         p1 = Primary.objects.create(name="p1", value="xx", related=s1)
 
         qs = Primary.objects.all()
-
-        self.assert_delayed(qs.defer("name")[0], 1)
-        self.assert_delayed(qs.only("name")[0], 2)
+        self.assert_delayed(qs.defer("name")[0], 0)
+        self.assert_delayed(qs.defer("value")[0], 1)
+        self.assert_delayed(qs.only("name")[0], 1)
+        self.assert_delayed(qs.only("value")[0], 0)
         self.assert_delayed(qs.defer("related__first")[0], 0)
 
         # Using 'pk' with only() should result in 3 deferred fields, namely all
         # of them except the model's primary key see #15494
-        self.assert_delayed(qs.only("pk")[0], 3)
+        self.assert_delayed(qs.only("pk")[0], 1)
 
         obj = qs.select_related().only("related__first")[0]
-        self.assert_delayed(obj, 2)
+        self.assert_delayed(obj, 1)
 
         self.assertEqual(obj.related_id, s1.pk)
 
         # You can use 'pk' with reverse foreign key lookups.
-        self.assert_delayed(s1.primary_set.all().only('pk')[0], 3)
+        self.assert_delayed(s1.primary_set.all().only('pk')[0], 1)
 
-        self.assert_delayed(qs.defer("name").extra(select={"a": 1})[0], 1)
-        self.assert_delayed(qs.extra(select={"a": 1}).defer("name")[0], 1)
-        self.assert_delayed(qs.defer("name").defer("value")[0], 2)
-        self.assert_delayed(qs.only("name").only("value")[0], 2)
-        self.assert_delayed(qs.only("name").defer("value")[0], 2)
-        self.assert_delayed(qs.only("name", "value").defer("value")[0], 2)
-        self.assert_delayed(qs.defer("name").only("value")[0], 2)
+        self.assert_delayed(qs.defer("value").extra(select={"a": 1})[0], 1)
+        self.assert_delayed(qs.extra(select={"a": 1}).defer("value")[0], 1)
+        self.assert_delayed(qs.defer("name").defer("value")[0], 1)
+        self.assert_delayed(qs.only("name").only("value")[0], 0)
+        self.assert_delayed(qs.only("name").defer("value")[0], 1)
+        self.assert_delayed(qs.only("name", "value").defer("value")[0], 1)
+        self.assert_delayed(qs.defer("name").only("value")[0], 0)
 
         obj = qs.only()[0]
         self.assert_delayed(qs.defer(None)[0], 0)
@@ -56,22 +57,20 @@ class DeferTests(TestCase):
 
         # User values() won't defer anything (you get the full list of
         # dictionaries back), but it still works.
-        self.assertEqual(qs.defer("name").values()[0], {
-            "id": p1.id,
-            "name": "p1",
-            "value": "xx",
-            "related_id": s1.id,
+        self.assertEqual(qs.defer("value").values()[0], {
+            'name': u'x1',
+            'related_second': u'y1',
+            'related_first': u'x1'
         })
         self.assertEqual(qs.only("name").values()[0], {
-            "id": p1.id,
-            "name": "p1",
-            "value": "xx",
-            "related_id": s1.id,
+            'name': u'x1',
+            'related_second': u'y1',
+            'related_first': u'x1'
         })
 
         # Using defer() and only() with get() is also valid.
-        self.assert_delayed(qs.defer("name").get(pk=p1.pk), 1)
-        self.assert_delayed(qs.only("name").get(pk=p1.pk), 2)
+        self.assert_delayed(qs.defer("name").get(pk=p1.pk), 0)
+        self.assert_delayed(qs.only("name").get(pk=p1.pk), 1)
 
         # DOES THIS WORK?
         self.assert_delayed(qs.only("name").select_related("related")[0], 1)
