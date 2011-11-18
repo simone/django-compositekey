@@ -27,12 +27,12 @@ class Author(models.Model):
         return u'%s %s' % (self.first_name, self.last_name)
 
     class Meta:
-        db_table = 'my_author_table'
+        db_table = 'myc_author_table'
         ordering = ('last_name','first_name')
 
 class Article(models.Model):
     headline = models.CharField(max_length=100)
-    authors = models.ManyToManyField(Author, db_table='my_m2m_table')
+    authors = models.ManyToManyField(Author, db_table='myc_m2m_table')
 
     def __unicode__(self):
         return self.headline

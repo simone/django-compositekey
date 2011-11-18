@@ -5,6 +5,7 @@ from datetime import datetime
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.fields import FieldDoesNotExist
 from django.test import TestCase, skipIfDBFeature, skipUnlessDBFeature
+from compositekey.utils import assemble_pk
 
 from .models import Article
 
@@ -453,7 +454,7 @@ class ModelTest(TestCase):
             pub_date=datetime(2005, 7, 31, 12, 30, 45),
         )
         a101.save()
-        a101 = Article.objects.get(pk='Article 101')
+        a101 = Article.objects.get(pk=assemble_pk('Article 101', datetime(2005, 7, 31, 12, 30, 45)))
         self.assertEqual(a101.headline, u'Article 101')
 
     def test_create_method(self):
