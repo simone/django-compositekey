@@ -7,10 +7,16 @@ __all__ = ["activate_get_from_clause_monkey_patch"]
 def wrap_get_from_clause(original_get_from_clause):
 
     def get_from_clause(self):
-        opts=self.query.model._meta
-        if not getattr(opts, "enable_composite", False):
-            return original_get_from_clause(self)
+        """
+        Returns a list of strings that are joined together to go after the
+        "FROM" part of the query, as well as a list any extra parameters that
+        need to be included. Sub-classes, can override this to create a
+        from-clause via a "select".
 
+        This should only be called after any SQL construction methods that
+        might change the tables we need. This means the select columns and
+        ordering must be done first.
+        """
         result = []
         qn = self.quote_name_unless_alias
         qn2 = self.connection.ops.quote_name
@@ -21,7 +27,7 @@ def wrap_get_from_clause(original_get_from_clause):
             try:
                 name, alias, join_type, lhs, _lhs_col, _col, nullable = self.query.alias_map[alias]
                 #print name, alias, join_type, lhs, _lhs_col, _col, nullable
-                lhs_cols, cols = _lhs_col.columns if _lhs_col else [],_col.columns if _col else []
+                lhs_cols, cols = getattr(_lhs_col, "columns", [_lhs_col]), getattr(_col, "columns", [_col])
             except KeyError:
                 # Extra tables can end up in self.tables, but not in the
                 # alias_map if they aren't in a join. That's OK. We skip them.

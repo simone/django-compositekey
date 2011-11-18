@@ -20,7 +20,7 @@ class Atoms(object):
         else:
             extra = ''
 
-        params = [disassemble_pk(v) for v in params]
+        params = [disassemble_pk(v, len(self.fields)) for v in params]
         params  = [[field.get_prep_value(part) for field, part in zip(self.fields, value)] for value in params]
 
         # regolarize params
@@ -95,6 +95,7 @@ class MultiColumn(object):
         return "MultiColumn(%s)" % ",".join(self.columns)
 
     def startswith(self, _):
-        raise Exception(self.fields, self.columns)
+        # hack for don't see errors
+        raise Exception("Trying to 'quote' a multiple key FIELD. Operation not supported yet. Please fix it", self.fields, self.columns)
 
     endswith = startswith

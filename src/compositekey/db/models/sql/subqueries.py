@@ -29,7 +29,7 @@ def wrap_delete_batch(original_delete_batch):
             off_list = pk_list[offset : offset + GET_ITERATOR_CHUNK_SIZE]
 
             # delete where in using concatenate features
-            values = [disassemble_pk(value) for value in off_list]
+            values = [disassemble_pk(value, len(field_keys)) for value in off_list]
             values = [[field.get_prep_value(part) for field, part in zip(field_keys, value)] for value in values]
             where.add(MultipleColumnsIN([f.column for f in field_keys], values), AND)
 

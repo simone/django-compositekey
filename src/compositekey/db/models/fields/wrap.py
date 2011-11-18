@@ -22,15 +22,26 @@ def get_composite_pk(fields, name="pk"):
     cache_name="_composite_%s_cache" % name
     def _get(obj):
         # cache, if change the values you can yet identify thre real record
-        if not getattr(obj, cache_name, False):
+        if not hasattr(obj, cache_name):
             setattr(obj, cache_name, assemble_pk(*[getattr(obj, f.name) for f in fields]))
         return getattr(obj, cache_name)
     return _get
 
+
+def del_composite_pk(name="pk"):
+    cache_name="_composite_%s_cache" % name
+    def _set(obj, value):
+        if hasattr(obj, cache_name):
+            delattr(obj, cache_name)
+        if not value:
+            setattr(obj, cache_name, None)
+    return _set
+
+
 def set_composite_pk(fields, name="pk"):
     cache_name="_composite_%s_cache" % name
     def _set(obj, value):
-        values = disassemble_pk(value)
+        values = disassemble_pk(value, len(fields))
         if len(values) <> len(fields):
             values = [None for _ in fields]
         for field, val in zip(fields, values):

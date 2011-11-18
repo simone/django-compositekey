@@ -24,7 +24,7 @@ def prepare_model_and_meta(sender, **kwargs):
         
         if not hasattr(sender, 'natural_key'):
             def natural_key(self):
-                return disassemble_pk(self.pk)
+                return disassemble_pk(self.pk, len(self._meta.composite_primarykeys_field.get_key_fields()))
             
             sender.natural_key = natural_key
 
