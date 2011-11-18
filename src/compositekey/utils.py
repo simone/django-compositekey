@@ -32,12 +32,19 @@ def assemble_pk(*values):
 
     return result[:-1]
 
-def disassemble_pk(comp_pk):
+def dimention_list_generator(l, size):
+    i = iter(l)
+    for x in xrange(min(len(l), size)):
+        yield i.next()
+    for i in xrange(size - len(l)):
+        yield
+
+def disassemble_pk(comp_pk, length=None):
     """
     >>> disassemble_pk(assemble_pk("1", "2"))
     ['1', '2']
     """
-
+    results = []
     if comp_pk is not None:
         comp_pk = unicode(comp_pk)
         result = []
@@ -72,5 +79,8 @@ def disassemble_pk(comp_pk):
                 value = value.replace(ESCAPE_CHAR+NONE_CHAR, NONE_CHAR)
                 result.append(value)
 
-        return [unicode(x) for x in result]
-    return []
+        results = [unicode(x) for x in result]
+
+    if length > 0:
+        results = list(dimention_list_generator(results, length))
+    return results
