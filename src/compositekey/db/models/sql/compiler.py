@@ -1,3 +1,7 @@
+from django.core.exceptions import FieldError
+from django.db.models.sql.constants import LHS_JOIN_COL, LHS_ALIAS, RHS_JOIN_COL, TABLE_NAME, JOIN_TYPE, LOOKUP_SEP
+from django.db.models.sql.query import get_order_dir
+
 __author__ = 'aldaran'
 
 from django.db.models.sql.compiler import SQLCompiler
@@ -58,8 +62,66 @@ def wrap_get_from_clause(original_get_from_clause):
     get_from_clause._sign = "monkey patch by compositekey"
     return get_from_clause
 
+def find_ordering_name(self, name, opts, alias=None, default_order='ASC',
+        already_seen=None):
+    """
+    Returns the table alias (the name might be ambiguous, the alias will
+    not be) and column name for ordering by the given 'name' parameter.
+    The 'name' is of the form 'field1__field2__...__fieldN'.
+    """
+    name, order = get_order_dir(name, default_order)
+    pieces = name.split(LOOKUP_SEP)
+    if not alias:
+        alias = self.query.get_initial_alias()
+    field, target, opts, joins, last, extra = self.query.setup_joins(pieces,
+            opts, alias, False)
+    alias = joins[-1]
+    col = getattr(target.column, "columns", [target.column])[0] # todo: ordering using only the first column in multicolumns
+    if not field.rel:
+        # To avoid inadvertent trimming of a necessary alias, use the
+        # refcount to show that we are referencing a non-relation field on
+        # the model.
+        self.query.ref_alias(alias)
+
+    # Must use left outer joins for nullable fields and their relations.
+    self.query.promote_alias_chain(joins,
+        self.query.alias_map[joins[0]][JOIN_TYPE] == self.query.LOUTER)
+
+    # If we get to this point and the field is a relation to another model,
+    # append the default ordering for that model.
+    if field.rel and len(joins) > 1 and opts.ordering:
+        # Firstly, avoid infinite loops.
+        if not already_seen:
+            already_seen = set()
+        join_tuple = tuple([self.query.alias_map[j][TABLE_NAME] for j in joins])
+        if join_tuple in already_seen:
+            raise FieldError('Infinite loop caused by ordering.')
+        already_seen.add(join_tuple)
+
+        results = []
+        for item in opts.ordering:
+            results.extend(self.find_ordering_name(item, opts, alias,
+                    order, already_seen))
+        return results
+
+    if alias:
+        # We have to do the same "final join" optimisation as in
+        # add_filter, since the final column might not otherwise be part of
+        # the select set (so we can't order on it).
+        while 1:
+            join = self.query.alias_map[alias]
+            if col != join[RHS_JOIN_COL]:
+                break
+            self.query.unref_alias(alias)
+            alias = join[LHS_ALIAS]
+            col = join[LHS_JOIN_COL]
+    return [(alias, col, order)]
+
+
+
 def activate_get_from_clause_monkey_patch():
     # monkey patch
     if not hasattr(SQLCompiler.get_from_clause, "_sign"):
         print "activate_get_from_clause_monkey_patch"
         SQLCompiler.get_from_clause = wrap_get_from_clause(SQLCompiler.get_from_clause)
+        SQLCompiler.find_ordering_name = find_ordering_name

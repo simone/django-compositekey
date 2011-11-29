@@ -5,6 +5,7 @@ when you run "manage.py test".
 Replace this with more appropriate tests for your application.
 """
 from django.contrib.auth.models import User
+from django.db.models.aggregates import Avg, Max
 from django.test import TestCase
 from django.forms.models import modelformset_factory
 from compositekey.utils import *
@@ -135,6 +136,28 @@ class ModelTest(TestCase):
         a = Auto.objects.create(id1=1, id2="due")
         rel = RelationAuto.objects.create(fk=a)
         copy = RelationAuto.objects.get(fk=a.pk)
+
+    def test_values_list(self):
+        # in values_list are ignored the composite keys
+        Book.objects.create(name="Libro sulle compositeKey", author="Simone")
+        self.assertEqual(list(Book.objects.all().values_list("pk", "author")), [
+            (u'Simone',),
+        ])
+
+    def test_annotate_values_list(self):
+        book = Book.objects.create(name="Libro sulle compositeKey", author="Simone")
+        book.chapter_set.create(text="xontenuyo cap 1", title="cap 1", num=1)
+        book.chapter_set.create(text="xontenuyo cap 2", title="cap 2", num=2)
+        book.chapter_set.create(text="xontenuyo cap 3", title="cap 3", num=3)
+
+        # ignore composite pk in value list
+        books = Book.objects.all().annotate(num_chapters=Max("chapter_set__num")).values_list("pk", "name", "author", "num_chapters")
+        self.assertEqual(
+            list(books), [
+                (u"Libro sulle compositeKey", u"Simone", 3),
+            ]
+        )
+
 
 class UtilsTest(TestCase):
 

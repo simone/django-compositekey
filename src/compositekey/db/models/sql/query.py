@@ -44,8 +44,37 @@ def add_fields(self, field_names, allow_m2m=True):
 
 add_fields._sign = "monkey patch by compositekey"
 
+
+def deferred_to_columns_cb(self, target, model, fields):
+    """
+    Callback used by deferred_to_columns(). The "target" parameter should
+    be a set instance.
+    """
+    table = model._meta.db_table
+    if table not in target:
+        target[table] = set()
+    for field in fields:
+        if not hasattr(field.column, "columns"):
+            target[table].add(field.column)
+        else:
+            target[table].update(field.column.columns)
+
+def get_loaded_field_names_cb(self, target, model, fields):
+    """
+    Callback used by get_deferred_field_names().
+    """
+    names = [f.name for f in fields if not getattr(f, "not_in_db", False)]
+    for field in fields:
+        if getattr(field, "not_in_db", False):
+            names += [f.name for f in field.fields]
+
+    target[model] = set(names)
+
+
 def activate_add_fields_monkey_patch():
     # monkey patch
     if not hasattr(Query.add_fields, "_sign"):
         print "activate_add_fields_monkey_patch"
         Query.add_fields = add_fields
+        Query.deferred_to_columns_cb = deferred_to_columns_cb
+        Query.get_loaded_field_names_cb = get_loaded_field_names_cb

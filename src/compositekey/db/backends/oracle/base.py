@@ -1,4 +1,4 @@
-from django.db.backends.oracle.base import DatabaseOperations, _get_sequence_reset_sql
+
 
 __author__ = 'fabio'
 
@@ -30,7 +30,16 @@ def sequence_reset_sql(self, style, model_list):
 sequence_reset_sql._sign = "monkey patch by compositekey"
 
 def activate_sequence_reset_sql_monkey_patch():
-    # monkey patch
-    if not hasattr(DatabaseOperations.sequence_reset_sql, "_sign"):
-        print "activate_sequence_reset_sql_monkey_patch"
-        DatabaseOperations.sequence_reset_sql = sequence_reset_sql
+    from django.conf import settings
+    def check_database_property(property, value):
+        for name in settings.DATABASES:
+                if settings.DATABASES[name][property].strip() == value:
+                    return True
+        return False
+    
+    if check_database_property('ENGINE', 'django.db.backends.oracle'):
+        from django.db.backends.oracle.base import DatabaseOperations, _get_sequence_reset_sql
+        # monkey patch
+        if not hasattr(DatabaseOperations.sequence_reset_sql, "_sign"):
+            print "activate_sequence_reset_sql_monkey_patch"
+            DatabaseOperations.sequence_reset_sql = sequence_reset_sql

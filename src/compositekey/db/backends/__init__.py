@@ -16,8 +16,8 @@ def sequence_list(self):
                 continue
             if not router.allow_syncdb(self.connection.alias, model):
                 continue
-            for f in [f for f in model._meta.local_fields if not getattr(f, "not_in_db", False)]:
-                if isinstance(f, models.AutoField):
+            for f in model._meta.local_fields:
+                if not getattr(f, "not_in_db", False) and isinstance(f, models.AutoField):
                     sequence_list.append({'table': model._meta.db_table, 'column': f.column})
                     break # Only one AutoField is allowed per model, so don't bother continuing.
 

@@ -1,3 +1,5 @@
+import itertools
+
 __author__ = 'aldaran'
 
 from django.db.models.loading import app_cache_ready
@@ -38,6 +40,12 @@ def _fill_fields_cache(self):
     self._field_cache = tuple(cache)
     self._field_name_cache = [x for x, _ in cache]
 
+def nodb_names(self):
+    names = list(itertools.chain(*[(f.name, f.attname) for f in self.local_fields if getattr(f, "not_in_db", False)]))
+    if hasattr(self.pk, "is_composite_primarykeys_field"):
+        names += ["pk"]
+    return names
+
 def activate_get_fields_with_model_monkey_patch():
     # monkey patch
     if not hasattr(Options.get_fields_with_model, "_sign"):
@@ -49,3 +57,4 @@ def activate_get_fields_with_model_monkey_patch():
 
         # setup DB/fields
         Options.db_fields = property(lambda self: [f for f in self.fields if not getattr(f, "not_in_db", False)])
+        Options.nodb_names = property(nodb_names)

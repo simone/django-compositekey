@@ -65,19 +65,19 @@ class BaseAggregateTestCase(TestCase):
 
     def test_annotate_basic(self):
         self.assertQuerysetEqual(
-            Book.objects.annotate().order_by('pk'), [
-                "The Definitive Guide to Django: Web Development Done Right",
-                "Sams Teach Yourself Django in 24 Hours",
+            Book.objects.annotate().order_by('name'), [
+                "Artificial Intelligence: A Modern Approach",
+                "Paradigms of Artificial Intelligence Programming: Case Studies in Common Lisp",
                 "Practical Django Projects",
                 "Python Web Development with Django",
-                "Artificial Intelligence: A Modern Approach",
-                "Paradigms of Artificial Intelligence Programming: Case Studies in Common Lisp"
+                "Sams Teach Yourself Django in 24 Hours",
+                "The Definitive Guide to Django: Web Development Done Right",
             ],
             lambda b: b.name
         )
 
         books = Book.objects.annotate(mean_age=Avg("authors__age"))
-        b = books.get(pk=1)
+        b = books.get(isbn="159059725")
         self.assertEqual(
             b.name,
             u'The Definitive Guide to Django: Web Development Done Right'
@@ -166,12 +166,12 @@ class BaseAggregateTestCase(TestCase):
         )
 
     def test_annotate_values(self):
-        books = list(Book.objects.filter(pk=1).annotate(mean_age=Avg("authors__age")).values())
+        books = list(Book.objects.filter(pk="159059725-The Definitive Guide to Django: Web Development Done Right").annotate(mean_age=Avg("authors__age")).values())
         self.assertEqual(
             books, [
                 {
-                    "contact_id": 1,
-                    "id": 1,
+                    "contact_age": 34,
+                    "contact_name": u'Adrian Holovaty',
                     "isbn": "159059725",
                     "mean_age": 34.5,
                     "name": "The Definitive Guide to Django: Web Development Done Right",
@@ -184,18 +184,17 @@ class BaseAggregateTestCase(TestCase):
             ]
         )
 
-        books = Book.objects.filter(pk=1).annotate(mean_age=Avg('authors__age')).values('pk', 'isbn', 'mean_age')
+        books = Book.objects.filter(pk="159059725-The Definitive Guide to Django: Web Development Done Right").annotate(mean_age=Avg('authors__age')).values('pk', 'isbn', 'mean_age')
         self.assertEqual(
             list(books), [
                 {
-                    "pk": 1,
                     "isbn": "159059725",
                     "mean_age": 34.5,
                 }
             ]
         )
 
-        books = Book.objects.filter(pk=1).annotate(mean_age=Avg("authors__age")).values("name")
+        books = Book.objects.filter(isbn="159059725").annotate(mean_age=Avg("authors__age")).values("name")
         self.assertEqual(
             list(books), [
                 {
@@ -204,12 +203,12 @@ class BaseAggregateTestCase(TestCase):
             ]
         )
 
-        books = Book.objects.filter(pk=1).values().annotate(mean_age=Avg('authors__age'))
+        books = Book.objects.filter(isbn="159059725").values().annotate(mean_age=Avg('authors__age'))
         self.assertEqual(
             list(books), [
                 {
-                    "contact_id": 1,
-                    "id": 1,
+                    "contact_age": 34,
+                    "contact_name": u'Adrian Holovaty',
                     "isbn": "159059725",
                     "mean_age": 34.5,
                     "name": "The Definitive Guide to Django: Web Development Done Right",
@@ -335,7 +334,8 @@ class BaseAggregateTestCase(TestCase):
             rating=3.5,
             price=Decimal("1000"),
             publisher=p,
-            contact_id=1,
+            contact_age=34,
+            contact_name='Adrian Holovaty',
             pubdate=datetime.date(2008,12,1)
         )
         Book.objects.create(
@@ -345,7 +345,8 @@ class BaseAggregateTestCase(TestCase):
             rating=4.0,
             price=Decimal("1000"),
             publisher=p,
-            contact_id=1,
+            contact_age=34,
+            contact_name='Adrian Holovaty',
             pubdate=datetime.date(2008,12,2)
         )
         Book.objects.create(
@@ -355,7 +356,8 @@ class BaseAggregateTestCase(TestCase):
             rating=4.5,
             price=Decimal("35"),
             publisher=p,
-            contact_id=1,
+            contact_age=34,
+            contact_name='Adrian Holovaty',
             pubdate=datetime.date(2008,12,3)
         )
 
@@ -436,14 +438,13 @@ class BaseAggregateTestCase(TestCase):
         self.assertEqual(len(publishers), 0)
 
     def test_annotation(self):
-        vals = Author.objects.filter(pk=1).aggregate(Count("friends__id"))
+        vals = Author.objects.filter(pk='Adrian Holovaty-34').aggregate(Count("friends__id"))
         self.assertEqual(vals, {"friends__id__count": 2})
-
         books = Book.objects.annotate(num_authors=Count("authors__name")).filter(num_authors__ge=2).order_by("pk")
         self.assertQuerysetEqual(
             books, [
-                "The Definitive Guide to Django: Web Development Done Right",
                 "Artificial Intelligence: A Modern Approach",
+                "The Definitive Guide to Django: Web Development Done Right",
             ],
             lambda b: b.name
         )
@@ -466,6 +467,7 @@ class BaseAggregateTestCase(TestCase):
         )
 
         publishers = Publisher.objects.filter(book__price__lt=Decimal("40.0")).annotate(num_books=Count("book__id")).filter(num_books__gt=1)
+
         self.assertQuerysetEqual(
             publishers, [
                 "Apress",
@@ -531,28 +533,28 @@ class BaseAggregateTestCase(TestCase):
         )
 
     def test_annotate_values_list(self):
-        books = Book.objects.filter(pk=1).annotate(mean_age=Avg("authors__age")).values_list("pk", "isbn", "mean_age")
+        books = Book.objects.filter(pk="159059725-The Definitive Guide to Django: Web Development Done Right").annotate(mean_age=Avg("authors__age")).values_list("isbn", "mean_age")
         self.assertEqual(
             list(books), [
-                (1, "159059725", 34.5),
+                ("159059725", 34.5),
             ]
         )
 
-        books = Book.objects.filter(pk=1).annotate(mean_age=Avg("authors__age")).values_list("isbn")
+        books = Book.objects.filter(pk="159059725-The Definitive Guide to Django: Web Development Done Right").annotate(mean_age=Avg("authors__age")).values_list("isbn")
         self.assertEqual(
             list(books), [
                 ('159059725',)
             ]
         )
 
-        books = Book.objects.filter(pk=1).annotate(mean_age=Avg("authors__age")).values_list("mean_age")
+        books = Book.objects.filter(pk="159059725-The Definitive Guide to Django: Web Development Done Right").annotate(mean_age=Avg("authors__age")).values_list("mean_age")
         self.assertEqual(
             list(books), [
                 (34.5,)
             ]
         )
 
-        books = Book.objects.filter(pk=1).annotate(mean_age=Avg("authors__age")).values_list("mean_age", flat=True)
+        books = Book.objects.filter(pk="159059725-The Definitive Guide to Django: Web Development Done Right").annotate(mean_age=Avg("authors__age")).values_list("mean_age", flat=True)
         self.assertEqual(list(books), [34.5])
 
         books = Book.objects.values_list("price").annotate(count=Count("price")).order_by("-count", "price")
