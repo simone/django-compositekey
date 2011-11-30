@@ -1,0 +1,18 @@
+[
+    {
+        "pk": "2", 
+        "model": "composite_fixtures_model_package.article",
+        "fields": {
+            "headline": "Poker has no place on ESPN", 
+            "pub_date": "2006-06-16 12:00:00"
+        }
+    }, 
+    {
+        "pk": "3", 
+        "model": "composite_fixtures_model_package.article",
+        "fields": {
+            "headline": "Copyright is fine the way it is",
+            "pub_date": "2006-06-16 14:00:00"
+        }
+    }
+]

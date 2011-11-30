@@ -16,7 +16,6 @@ class Atoms(object):
 
         if hasattr(params, 'as_sql'):
             extra, params = params.as_sql(qn, connection)
-            print "??", extra, self.sql_colums, params
         else:
             extra = ''
 
