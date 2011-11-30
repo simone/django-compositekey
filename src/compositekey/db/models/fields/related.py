@@ -56,7 +56,7 @@ def wrap_fk_monkey_patch(ori_init, ori_contribute_to_class):
                     self.db_type = lambda *args, **kwargs: None
                     self.db_index = False
                     self.get_prep_value = lambda self, value: value
-                    self.primary_key = True
+                    #self.primary_key = True # ERROR in inlineforms (unique)
 
             # if the class is an autocreated class, the FK contrib_to_class need to be lazy after the "creation contrib_to_class()"
             if opts.auto_created:

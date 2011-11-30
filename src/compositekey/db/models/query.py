@@ -1,5 +1,6 @@
 from django.db.models.query import get_cached_row, get_klass_info
 from compositekey.db.models.query_utils import new_deferred_class_factory as deferred_class_factory
+from compositekey.utils import *
 
 __author__ = 'aldaran'
 
@@ -134,6 +135,21 @@ def vl_iterator(self):
             data = dict(zip(names, row))
             yield tuple([data[f] for f in fields])
 
+def wrap_update(original):
+
+    def _update(self, _values):
+
+        assert self.query.can_filter(), \
+                "Cannot update a query once a slice has been taken."
+        values = []
+        for field, model, value in _values:
+            if not hasattr(field, "fields"):
+                values += [(field, model, value)]
+            else:
+                l = len(field.fields)
+                values += zip(field.fields, [model]*l, disassemble_pk(value, l))
+        return original(self, values)
+    return _update
 
 def activate_iterator_monkey_patch():
     from django.db.models.query import QuerySet, ValuesQuerySet, ValuesListQuerySet
@@ -143,4 +159,5 @@ def activate_iterator_monkey_patch():
         QuerySet.iterator = iterator
         ValuesQuerySet.iterator = v_iterator
         ValuesListQuerySet.iterator = vl_iterator
+        QuerySet._update = wrap_update(QuerySet._update)
 

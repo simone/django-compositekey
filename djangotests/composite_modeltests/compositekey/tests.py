@@ -7,7 +7,7 @@ Replace this with more appropriate tests for your application.
 from django.contrib.auth.models import User
 from django.db.models.aggregates import Avg, Max
 from django.test import TestCase
-from django.forms.models import modelformset_factory
+from django.forms.models import modelformset_factory, inlineformset_factory
 from compositekey.utils import *
 
 from .models import *
@@ -233,6 +233,8 @@ class AdminTest(TestCase):
         self.assertEqual(response["location"], 'http://testserver%s/book/' % self.admin_url)
 
 
+
+
 class FormTest(TestCase):
 
     def test_empty(self):
@@ -256,3 +258,65 @@ class FormTest(TestCase):
             'form-0-text': u'',
         })
         formset.save()
+
+    def test_form_0_id_output(self):
+        FormSet = modelformset_factory(Chapter)
+        author = 'Rudolf Steiner'
+        name = 'Theosophy'
+        b = Book.objects.create(name=name, author=author)
+        b.chapter_set.create(text="xontenuyo cap 1", title="cap 1", num=1)
+        self.assertTrue('name="form-0-id"' in str(FormSet(queryset=b.chapter_set.all())))
+
+
+    def test_one_with_values(self):
+        FormSet = modelformset_factory(Chapter)
+        author = 'Rudolf Steiner'
+        name = 'Theosophy'
+        b = Book.objects.create(name=name, author=author)
+        c = b.chapter_set.create(text="xontenuyo cap 1", title="cap 1", num=1)
+
+        formset = FormSet({
+            'form-TOTAL_FORMS': u'1',
+            'form-INITIAL_FORMS': u'1',
+            'form-MAX_NUM_FORMS': u'',
+            'form-0-book': b.pk,
+            'form-0-id': c.pk,
+            'form-0-num': c.num,
+            'form-0-title': c.title,
+            'form-0-text': c.text,
+        }, queryset=b.chapter_set.all())
+        formset.save()
+
+    def test_inline(self):
+        FormSet = inlineformset_factory(Book, Chapter)
+        author = 'Rudolf Steiner'
+        name = 'Theosophy'
+        b = Book.objects.create(name=name, author=author)
+        c = b.chapter_set.create(text="xontenuyo cap 1", title="cap 1", num=1)
+        self.assertTrue('name="chapter_set-0-id"' in str(FormSet(instance=b)))
+
+        formset = FormSet({
+            'chapter_set-TOTAL_FORMS': u'1',
+            'chapter_set-INITIAL_FORMS': u'1',
+            'chapter_set-MAX_NUM_FORMS': u'',
+            'chapter_set-0-book': b.pk,
+            'chapter_set-0-id': c.pk,
+            'chapter_set-0-num': c.num,
+            'chapter_set-0-title': c.title,
+            'chapter_set-0-text': c.text,
+        }, instance=b)
+        formset.save()
+
+
+    def test_admin_inline(self):
+        from .admin import ChapterInline, site
+        u = User(is_superuser=True)
+        class R(object):
+            user = User(is_superuser=True)
+        FormSet = ChapterInline(Book, site).get_formset( request=R )
+        author = 'Rudolf Steiner'
+        name = 'Theosophy'
+        b = Book.objects.create(name=name, author=author)
+        c = b.chapter_set.create(text="xontenuyo cap 1", title="cap 1", num=1)
+        self.assertTrue('name="chapter_set-0-id"' in str(FormSet(instance=b)))
+
