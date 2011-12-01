@@ -13,7 +13,8 @@
 # file for each of the backends you test against.
 
 import sys
-sys.path.append("/home/aldaran/workspaces/django/django_compositekey/compositekey/src")
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir, "src"))
 
 DATABASES = {
     'default': {
@@ -23,6 +24,3 @@ DATABASES = {
         'ENGINE': 'django.db.backends.sqlite3',
     }
 }
-
-#from compositekey.patch import django_compositekey_patch
-#django_compositekey_patch()
