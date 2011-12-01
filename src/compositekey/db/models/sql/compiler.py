@@ -30,7 +30,6 @@ def wrap_get_from_clause(original_get_from_clause):
                 continue
             try:
                 name, alias, join_type, lhs, _lhs_col, _col, nullable = self.query.alias_map[alias]
-                #print name, alias, join_type, lhs, _lhs_col, _col, nullable
                 lhs_cols, cols = getattr(_lhs_col, "columns", [_lhs_col]), getattr(_col, "columns", [_col])
             except KeyError:
                 # Extra tables can end up in self.tables, but not in the

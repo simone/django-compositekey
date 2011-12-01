@@ -3,17 +3,12 @@ __author__ = 'aldaran'
 def as_sql(self, qn, connection):
     "Return the aggregate, rendered as SQL."
 
-    #print "SIMONE", "as_sql"
-
-    # todo: he hato to do the same of the IN clause using the CONCAT inside the Aggregate
-    # so we have to change the params to obtain a SQL valid function
-
     class AggregateMulticolumn(object):
         def __init__(self, column, aliases=[]):
             self.columns = [tuple(aliases+[c]) for c in column.columns]
 
         def append(self, obj):
-            raise Exception("Absurd situation", obj)
+            assert False, "please contact compositekey author"
 
         def as_sql(self, qn, connection):
             return "||".join(['.'.join([qn(c) for c in column]) for column in self.columns])

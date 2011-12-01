@@ -19,7 +19,6 @@ class MultipleColumnsIN(object):
         return service.get(connection.vendor, UseConcat)(self.cols, self.values, self.extra).as_sql(qn, connection)
 
 
-
 class UseConcat(object):
     """
     Concat columns and values.
@@ -54,15 +53,17 @@ class UseConcat(object):
 
     def as_sql(self, qn=None, connection=None):
         col_sep = self.quote_v(SEPARATOR).join([self.concat]*2)
-
+        params = self.values
         if isinstance(self.cols, (list, tuple)):
             if len(self.cols) > 1:
                 # there are more than one column
                 column = col_sep.join([self.cq % qn(c) for c in self.cols])
-                params = [SEPARATOR.join([self.quote_v(v) for v in val]) for val in self.values]
+                if self.extra == '':
+                    params = [SEPARATOR.join([self.quote_v(v) for v in val]) for val in self.values]
             else: # multiple, but one only column!
                 column = qn(self.cols[0])
-                params = [self.quote_v(v) for v in zip(*self.values)[0]]
+                if self.extra == '':
+                    params = [self.quote_v(v) for v in zip(*self.values)[0]]
         else:
             column = self.cq % qn(self.cols)
             params = [self.quote_v(v) for v in self.values]
@@ -98,19 +99,22 @@ class UseTuple(object):
         return column
 
     def as_sql(self, qn=None, connection=None):
+        params = self.values
         if isinstance(self.cols, (list, tuple)):
             # there are more than one column
 
             column = "(%s)" % ",".join([qn(c.strip()) for c in self.cols])
-            # this is a workaround to avoid changes to template as is
-            format = self.template.replace("%%s", "%s")
-            params, tuples = [], []
+            format = self.template % column
+            if self.extra == '':
+                params, tuples = [], []
 
-            for val in self.values:
-                tuples.append("(%s)" % ",".join(["%s" for c in val]))
-                params.extend(val)
+                for val in self.values:
+                    tuples.append("(%s)" % ",".join(["%s" for c in val]))
+                    params.extend(val)
 
-            format = format % (column, ",".join(tuples))
+                format = format % ",".join(tuples)
+            else:
+                format = format % self.extra
         else:
             column = qn(self.cols.strip())
             params = self.values

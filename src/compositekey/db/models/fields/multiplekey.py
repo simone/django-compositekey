@@ -41,20 +41,10 @@ class MultipleFieldPrimaryKey(AutoField):
     def get_prep_value(self, value):
         return value
 
-    def get_db_prep_lookup(self, lookup_type, value, connection, prepared=False):
-        if lookup_type == "in":
-            if not prepared:
-                value = self.get_prep_lookup(lookup_type, value)
-            if hasattr(value, 'get_compiler'):
-                value.select = [self.column] # hack for inner query IN
-                value = value.get_compiler(connection=connection)
-        return super(MultipleFieldPrimaryKey, self).get_db_prep_lookup(lookup_type, value, connection, prepared=prepared)
-
     def contribute_to_class(self, cls, name):
         super(MultipleFieldPrimaryKey, self).contribute_to_class(cls, name)
         opts = cls._meta
         if not self in opts.local_fields: return
-
 
         opts.enable_composite = True
         opts.has_auto_field = True # required for inlineformset

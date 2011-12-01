@@ -87,8 +87,6 @@ def iterator(self):
         # Add the aggregates to the model
         if aggregate_select:
             for i, aggregate in enumerate(aggregate_select):
-                #print obj, aggregate, len(row), i, aggregate_start
-                #print row
                 setattr(obj, aggregate, row[i+aggregate_start])
 
         yield obj
@@ -138,7 +136,6 @@ def vl_iterator(self):
 def wrap_update(original):
 
     def _update(self, _values):
-
         assert self.query.can_filter(), \
                 "Cannot update a query once a slice has been taken."
         values = []

@@ -1,5 +1,5 @@
 from django.db.models.fields import Field
-from django.db.models.sql.where import EmptyShortCircuit, EmptyResultSet, WhereNode
+from django.db.models.sql.where import EmptyShortCircuit, EmptyResultSet, WhereNode, Constraint
 
 
 def wrap_make_atom(original_make_atom):
@@ -34,8 +34,17 @@ def wrap_make_atom(original_make_atom):
     make_atom._sign = "monkey patch by compositekey"
     return make_atom
 
+def wrap_process(original):
+    def process(self, lookup_type, value, connection):
+        if lookup_type == "in":
+           if hasattr(self.col, "columns") and hasattr(value, 'get_compiler'):
+               value.select = [self.col]
+        return original(self, lookup_type, value, connection)
+    return process
+
 def activate_make_atom_monkey_patch():
     # monkey patch
     if not hasattr(WhereNode.make_atom, "_sign"):
         print "activate_make_atom_monkey_patch"
         WhereNode.make_atom = wrap_make_atom(WhereNode.make_atom)
+        Constraint.process = wrap_process(Constraint.process)

@@ -13,14 +13,14 @@ class Atoms(object):
         self.sql_colums = sql_colums
 
     def make_atoms(self, params, lookup_type, value_annot, qn, connection):
-
         if hasattr(params, 'as_sql'):
             extra, params = params.as_sql(qn, connection)
         else:
             extra = ''
 
-        params = [disassemble_pk(v, len(self.fields)) for v in params]
-        params  = [[field.get_prep_value(part) for field, part in zip(self.fields, value)] for value in params]
+        if extra == '': # if is not a subquery params
+            params = [disassemble_pk(v, len(self.fields)) for v in params]
+            params  = [[field.get_prep_value(part) for field, part in zip(self.fields, value)] for value in params]
 
         # regolarize params
         #if len(params)>0 and len(params[0]) < len(self.sql_colums):

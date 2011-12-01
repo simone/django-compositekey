@@ -26,7 +26,7 @@ class ForceTests(TestCase):
         # Try to update something that doesn't have a primary key in the first
         # place.
         c1 = Counter(name="two", name2="TWO", value=2)
-        self.assertRaises(ValueError, c1.save, force_update=True)
+        self.assertRaises(DatabaseError, c1.save, force_update=True)
         c1.save(force_insert=True)
 
         # Won't work because we can't insert a pk of the same value.
