@@ -27,7 +27,7 @@ class Atoms(object):
         #    params = params[0]
 
         if lookup_type == 'in':
-            return MultipleColumnsIN(self.sql_colums, params).as_sql(qn, connection)
+            return MultipleColumnsIN(self.sql_colums, params, extra).as_sql(qn, connection)
 
         atoms = zip(*[self.make_atom(field_sql, extra, param, lookup_type, value_annot, qn, connection) for field_sql, param in zip(self.sql_colums, zip(*params))])
         if not atoms: return "", []
@@ -73,6 +73,9 @@ class MultiColumn(object):
     def __init__(self, fields):
         self.fields = fields
         self.columns = [f.column for f in fields]
+
+    def as_sql(self, qn, connection):
+        return MultipleColumnsIN(self.columns).inner_sql(qn, connection)
 
     def sql_for_columns(self, data, qn, connection):
         """

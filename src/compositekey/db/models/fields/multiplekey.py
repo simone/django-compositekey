@@ -1,3 +1,5 @@
+from django.db.models.query_utils import QueryWrapper
+
 __author__ = 'aldaran'
 
 from django.utils.translation import ugettext_lazy as _
@@ -40,12 +42,13 @@ class MultipleFieldPrimaryKey(AutoField):
         return value
 
     def get_db_prep_lookup(self, lookup_type, value, connection, prepared=False):
-        ret = super(MultipleFieldPrimaryKey, self).get_db_prep_lookup(lookup_type, value, connection, prepared=prepared)
-        return ret
-
-    def get_prep_lookup(self, lookup_type, value, **kwargs):
-        ret = super(MultipleFieldPrimaryKey, self).get_prep_lookup(lookup_type, value, **kwargs)
-        return ret
+        if lookup_type == "in":
+            if not prepared:
+                value = self.get_prep_lookup(lookup_type, value)
+            if hasattr(value, 'get_compiler'):
+                value.select = [self.column] # hack for inner query IN
+                value = value.get_compiler(connection=connection)
+        return super(MultipleFieldPrimaryKey, self).get_db_prep_lookup(lookup_type, value, connection, prepared=prepared)
 
     def contribute_to_class(self, cls, name):
         super(MultipleFieldPrimaryKey, self).contribute_to_class(cls, name)
@@ -84,7 +87,7 @@ class MultipleFieldPrimaryKey(AutoField):
 
             # hack db_column for joins see compiler
             self.column = MultiColumn(self.fields)
-            self.db_type = lambda *args, **kwargs: None
+            self.db_type = nope
             self.db_index = False
             self.not_in_db = True
             self.primary_key = True

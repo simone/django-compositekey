@@ -68,6 +68,8 @@ def wrap_save_model(original_save):
     save._sign = "composite"
     return save
 
+def nope(*args, **kwargs): return None
+
 def prepare_hidden_key_field(model, field, blank, null, ext={}, prefix="composite"):
     default = ext.get(field.name, {})
     import copy
@@ -84,7 +86,7 @@ def prepare_hidden_key_field(model, field, blank, null, ext={}, prefix="composit
     new_field.null = null
 
     # hide formfield (None)
-    new_field.formfield = lambda *args, **kwargs : None
+    new_field.formfield = nope # use a function to use pickle
     #new_field.formfield = lambda *args, **kwargs : forms.CharField(required=False, widget=forms.TextInput(attrs={"readonly" : True}))
     return new_field
 

@@ -10,6 +10,7 @@ from compositekey.db.models.sql.column import MultiColumn
 
 __all__ = ['activate_fk_monkey_patch',]
 
+def identity(self, value): return value
 
 def wrap_fk_monkey_patch(ori_init, ori_contribute_to_class):
 
@@ -53,9 +54,9 @@ def wrap_fk_monkey_patch(ori_init, ori_contribute_to_class):
                     # hack db_column for joins
                     self.column = MultiColumn(new_fields)
                     self.not_in_db = True
-                    self.db_type = lambda *args, **kwargs: None
+                    self.db_type = nope
                     self.db_index = False
-                    self.get_prep_value = lambda self, value: value
+                    self.get_prep_value = identity
                     #self.primary_key = True # ERROR in inlineforms (unique)
 
             # if the class is an autocreated class, the FK contrib_to_class need to be lazy after the "creation contrib_to_class()"

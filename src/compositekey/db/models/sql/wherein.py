@@ -7,13 +7,16 @@ SEPARATOR = getattr(settings, "SELECT_IN_SQL_SEPARATOR",   '#')
 service = {}
 
 class MultipleColumnsIN(object):
-    def __init__(self, cols, values):
+    def __init__(self, cols, values=[], extra=''):
         self.cols = cols
         self.values = values
+        self.extra = extra
+
+    def inner_sql(self, qn, connection):
+        return service.get(connection.vendor, UseConcat)(self.cols, self.values, self.extra).inner_sql(qn, connection)
 
     def as_sql(self, qn, connection):
-        r =  service.get(connection.vendor, UseConcat)(self.cols, self.values).as_sql(qn, connection)
-        return r
+        return service.get(connection.vendor, UseConcat)(self.cols, self.values, self.extra).as_sql(qn, connection)
 
 
 
@@ -26,14 +29,28 @@ class UseConcat(object):
     concat = "||"
     cq = "quote(%s)"
 
-    def __init__(self, cols, values):
+    def __init__(self, cols, values, extra):
         self.cols = cols
         self.values = values
+        self.extra = extra
 
     def quote_v(self, value):
         if isinstance(value, int):
             return str(value)
         return "'%s'" % (str(value).replace("'", "''"))
+
+    def inner_sql(self, qn=None, connection=None):
+        col_sep = self.quote_v(SEPARATOR).join([self.concat]*2)
+
+        if isinstance(self.cols, (list, tuple)):
+            if len(self.cols) > 1:
+                # there are more than one column
+                column = col_sep.join([self.cq % qn(c) for c in self.cols])
+            else: # multiple, but one only column!
+                column = qn(self.cols[0])
+        else:
+            column = self.cq % qn(self.cols)
+        return column
 
     def as_sql(self, qn=None, connection=None):
         col_sep = self.quote_v(SEPARATOR).join([self.concat]*2)
@@ -49,7 +66,7 @@ class UseConcat(object):
         else:
             column = self.cq % qn(self.cols)
             params = [self.quote_v(v) for v in self.values]
-        return '%s IN (%s)' % (column, ",".join(["%s"] * len(params))), tuple(params or ())
+        return '%s IN %s' % (column, self.extra or "(%s)" % ",".join(["%s"] * len(params))), tuple(params or ())
 
 
 class UseConcatQuote(UseConcat):
@@ -68,9 +85,17 @@ class UseTuple(object):
     """
     template = '%s IN (%%s)'
 
-    def __init__(self, cols, values):
+    def __init__(self, cols, values, extra):
         self.cols = cols
         self.values = values
+        self.extra = extra
+
+    def inner_sql(self, qn=None, connection=None):
+        if isinstance(self.cols, (list, tuple)):
+            column = "%s" % ",".join([qn(c.strip()) for c in self.cols])
+        else:
+            column = qn(self.cols.strip())
+        return column
 
     def as_sql(self, qn=None, connection=None):
         if isinstance(self.cols, (list, tuple)):
