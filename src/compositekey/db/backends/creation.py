@@ -71,21 +71,50 @@ def sql_create_model(self, model, style, known_models=set()):
 sql_create_model._sign = "monkey patch by compositekey"
 
 def sql_indexes_for_model(self, model, style):
-        "Returns the CREATE INDEX SQL statements for a single model"
-        if not model._meta.managed or model._meta.proxy:
-            return []
-        output = []
-        for f in [f for f in model._meta.local_fields if not getattr(f, "not_in_db", False)]:
-            output.extend(self.sql_indexes_for_field(model, f, style))
-        return output
+    "Returns the CREATE INDEX SQL statements for a single model"
+    if not model._meta.managed or model._meta.proxy:
+        return []
+    output = []
+    for f in [f for f in model._meta.local_fields if not getattr(f, "not_in_db", False)]:
+        output.extend(self.sql_indexes_for_field(model, f, style))
+    return output
+sql_indexes_for_model._sign = "monkey patch by compositekey"
+
+def sql_for_pending_references(self, model, style, pending_references):
+    "Returns any ALTER TABLE statements to add constraints after the fact."
+    from django.db.backends.util import truncate_name
+
+    if not model._meta.managed or model._meta.proxy:
+        return []
+    qn = self.connection.ops.quote_name
+    final_output = []
+    opts = model._meta
+    if model in pending_references:
+        for rel_class, f in pending_references[model]:
+            rel_opts = rel_class._meta
+            r_table = rel_opts.db_table
+            r_col = f.column
+            table = opts.db_table
+            col = opts.get_field(f.rel.field_name).column
+
+            if not hasattr(col, "columns"):
+                # For MySQL, r_name must be unique in the first 64 characters.
+                # So we are careful with character usage here.
+                r_name = '%s_refs_%s_%s' % (r_col, col, self._digest(r_table, table))
+                final_output.append(style.SQL_KEYWORD('ALTER TABLE') + ' %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s)%s;' % \
+                    (qn(r_table), qn(truncate_name(r_name, self.connection.ops.max_name_length())),
+                    qn(r_col), qn(table), qn(col),
+                    self.connection.ops.deferrable_sql()))
+            else:
+                # todo: add constraint of multiple FK
+                pass
+        del pending_references[model]
+    return final_output
+sql_for_pending_references._sign = "monkey patch by compositekey"
 
 def activate_sql_create_model_monkey_patch():
     if not hasattr( BaseDatabaseCreation.sql_create_model, "_sign"):
         print "activate_sql_create_model_monkey_patch"
         BaseDatabaseCreation.sql_create_model = sql_create_model
-sql_indexes_for_model._sign = "monkey patch by compositekey"
-
-def activate_sql_indexes_for_model_monkey_patch():
-     if not hasattr(  BaseDatabaseCreation.sql_indexes_for_model, "_sign"):
-        print "activate_sql_indexes_for_model_monkey_patch"
         BaseDatabaseCreation.sql_indexes_for_model = sql_indexes_for_model
+        BaseDatabaseCreation.sql_for_pending_references = sql_for_pending_references

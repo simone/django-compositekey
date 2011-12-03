@@ -1,9 +1,8 @@
-
-
 __author__ = 'fabio'
 
 def sequence_reset_sql(self, style, model_list):
     from django.db import models
+    from django.db.backends.oracle.base import _get_sequence_reset_sql
     output = []
     query = _get_sequence_reset_sql()
     for model in model_list:
@@ -38,7 +37,7 @@ def activate_sequence_reset_sql_monkey_patch():
         return False
     
     if check_database_property('ENGINE', 'django.db.backends.oracle'):
-        from django.db.backends.oracle.base import DatabaseOperations, _get_sequence_reset_sql
+        from django.db.backends.oracle.base import DatabaseOperations
         # monkey patch
         if not hasattr(DatabaseOperations.sequence_reset_sql, "_sign"):
             print "activate_sequence_reset_sql_monkey_patch"

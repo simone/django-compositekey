@@ -10,10 +10,11 @@ SEP, ESCAPE_CHAR, NONE_CHAR = getattr(settings, "COMPOSITE_PK_SEPARATOR_ESCAPE",
 def assemble_pk(*values):
     if len(values) == 1:
         return values[0]
-    
-    # no ammissible multiplekey with null or blank values
+
+    # No ammissible multiplekey with a Null part (blank values are ok)
+    # because django features (ex inline) check if a key is None for new forms
     for val in values:
-        if val in ['', None]:
+        if val is None:
             return None
 
     result = ''
@@ -47,7 +48,6 @@ def disassemble_pk(comp_pk, length=None):
     results = []
     if comp_pk is not None:
         comp_pk = unicode(comp_pk)
-        result = []
         curr_index = 0
         index = 0
         while index < len(comp_pk):
@@ -62,10 +62,10 @@ def disassemble_pk(comp_pk, length=None):
                 value = value.replace(2*ESCAPE_CHAR, ESCAPE_CHAR)
 
                 if value == NONE_CHAR:
-                    result.append(None)
+                    results.append(None)
                 else:
                     value = value.replace(ESCAPE_CHAR+NONE_CHAR, NONE_CHAR)
-                    result.append(value)
+                    results.append(unicode(value))
                 curr_index = index+1
 
             index = index+1
@@ -74,12 +74,10 @@ def disassemble_pk(comp_pk, length=None):
             value = value.replace(2*ESCAPE_CHAR, ESCAPE_CHAR)
 
             if value == NONE_CHAR:
-                result.append(None)
+                results.append(None)
             else:
                 value = value.replace(ESCAPE_CHAR+NONE_CHAR, NONE_CHAR)
-                result.append(value)
-
-        results = [unicode(x) for x in result]
+                results.append(unicode(value))
 
     if length > 0:
         results = list(dimention_list_generator(results, length))
