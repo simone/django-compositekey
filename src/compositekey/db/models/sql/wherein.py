@@ -1,3 +1,5 @@
+from itertools import chain
+
 __author__ = 'aldaran'
 
 from django.conf import settings
@@ -106,13 +108,9 @@ class UseTuple(object):
             column = "(%s)" % ",".join([qn(c.strip()) for c in self.cols])
             format = self.template % column
             if self.extra == '':
-                params, tuples = [], []
-
-                for val in self.values:
-                    tuples.append("(%s)" % ",".join(["%s" for c in val]))
-                    params.extend(val)
-
-                format = format % ",".join(tuples)
+                # fix multiple IN if empty values
+                params = chain(*self.values) if self.values else (None,)*len(self.cols)
+                format = format % ",".join(["(%s)" % ",".join(("%s",)*len(self.cols))] * max(1, len(self.values)))
             else:
                 format = format % self.extra
         else:
