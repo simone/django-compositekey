@@ -138,14 +138,14 @@ def wrap_update(original):
     def _update(self, _values):
         assert self.query.can_filter(), \
                 "Cannot update a query once a slice has been taken."
-        values = []
+        values = {}
         for field, model, value in _values:
             if not hasattr(field, "fields"):
-                values += [(field, model, value)]
+                values[field.name] = (field, model, value)
             else:
-                l = len(field.fields)
-                values += zip(field.fields, [model]*l, disassemble_pk(value, l))
-        return original(self, values)
+                for f, v in zip(field.fields, disassemble_pk(value, len(field.fields))):
+                    values[f.name] = (f, model, v)
+        return original(self, values.values())
     return _update
 
 def activate_iterator_monkey_patch():

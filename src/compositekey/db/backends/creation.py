@@ -59,7 +59,7 @@ def sql_create_model(self, model, style, known_models=set()):
     full_statement.append(';')
     final_output.append('\n'.join(full_statement))
 
-    if opts.has_auto_field:
+    if opts.has_auto_field and not getattr(opts, "has_composite_primarykeys_field", False):
         # Add any extra SQL needed to support auto-incrementing primary keys.
         auto_column = opts.auto_field.db_column or opts.auto_field.name
         autoinc_sql = self.connection.ops.autoinc_sql(opts.db_table, auto_column)

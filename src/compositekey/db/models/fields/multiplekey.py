@@ -62,11 +62,11 @@ class MultipleFieldPrimaryKey(AutoField):
             assert isinstance(self.fields, (list, tuple)) and len(self.fields) > 1, \
                "%s must have a %s with at least 2 fields (%s)" % (cls.__name__, self.__class__.__name__,
                                                                   ",".join([f.name for f in self.fields]))
-            for field in self.fields:
-                # required for the use of key None in django (ex. inline)
-                assert field.null is False, \
-                "%s must have a %s with all fields (%s) not Null" % (cls.__name__, self.__class__.__name__,
-                                                                  ",".join([f.name for f in self.fields]))
+#            for field in self.fields:
+#                # required for the use of key None in django (ex. inline)
+#                assert field.null is False, \
+#                "%s must have a %s with all fields (%s) not Null" % (cls.__name__, self.__class__.__name__,
+#                                                                  ",".join([f.name for f in self.fields]))
             names = [f.name for f in self.fields]
             cls._meta.ordering = cls._meta.ordering or names
 
@@ -78,7 +78,7 @@ class MultipleFieldPrimaryKey(AutoField):
             for field in self.fields: field.db_index=True
 
             # get/set PK propery
-            setattr(cls, cls._meta.pk.attname, property(get_composite_pk(self.fields), del_composite_pk()))
+            setattr(cls, cls._meta.pk.attname, property(get_composite_pk(self.fields), del_composite_pk(), del_composite_pk()))
 
             # hack db_column for joins see compiler
             self.column = MultiColumn(self.fields)
