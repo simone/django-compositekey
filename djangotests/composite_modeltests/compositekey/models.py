@@ -4,7 +4,7 @@ from django.db import models
 from compositekey import db
 
 class Book(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=["author", "name"])
+    id = db.MultiFieldPK("author", "name")
     name = models.CharField(max_length=100)
     author = models.CharField(max_length=100)
 
@@ -26,7 +26,7 @@ class Library(models.Model):
 
 
 class Biografy(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=["book",])
+    id = db.MultiFieldPK("book")
     book = models.OneToOneField(Book)
     text = models.CharField(max_length=100)
 
@@ -34,7 +34,7 @@ class Biografy(models.Model):
         return u"BIO: %s" % unicode(self.book)
 
 class AbstractChapter(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=["book", "num"])
+    id = db.MultiFieldPK("book", "num")
     book = models.ForeignKey(Book, to_field="id",
         fields_ext={
             "author": {"db_column" :"b_author", "name" : "_author"},
@@ -56,7 +56,7 @@ class Chapter(AbstractChapter):
 class Auto(models.Model):
     id1 = models.IntegerField()
     id2 = models.CharField(max_length=100)
-    id = db.MultipleFieldPrimaryKey(fields=["id1", "id2"])
+    id = db.MultiFieldPK("id1", "id2")
     fk = models.ForeignKey("self", null=True)
     text = models.TextField()
 

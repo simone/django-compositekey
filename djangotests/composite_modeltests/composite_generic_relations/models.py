@@ -50,7 +50,7 @@ class Comparison(models.Model):
         return u"%s is %s than %s" % (self.first_obj, self.comparative, self.other_obj)
 
 class Animal(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("common_name", "latin_name"))
+    id = db.MultiFieldPK("common_name", "latin_name")
     common_name = models.CharField(max_length=150)
     latin_name = models.CharField(max_length=150)
 

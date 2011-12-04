@@ -19,7 +19,7 @@ class PersonManager(models.Manager):
         return self.filter(fun=True)
 
 class Person(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("first_name", "last_name"))
+    id = db.MultiFieldPK("first_name", "last_name")
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     fun = models.BooleanField()
@@ -35,7 +35,7 @@ class PublishedBookManager(models.Manager):
         return super(PublishedBookManager, self).get_query_set().filter(is_published=True)
 
 class Book(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("author", "title"))
+    id = db.MultiFieldPK("author", "title")
     title = models.CharField(max_length=50)
     author = models.CharField(max_length=30)
     is_published = models.BooleanField()
@@ -52,7 +52,7 @@ class FastCarManager(models.Manager):
         return super(FastCarManager, self).get_query_set().filter(top_speed__gt=150)
 
 class Car(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("name","mileage"))
+    id = db.MultiFieldPK("name","mileage")
     name = models.CharField(max_length=10)
     mileage = models.IntegerField(default=0)
     top_speed = models.IntegerField(help_text="In miles per hour.")

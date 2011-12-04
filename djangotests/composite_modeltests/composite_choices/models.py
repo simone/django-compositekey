@@ -18,7 +18,7 @@ GENDER_CHOICES = (
 )
 
 class Person(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("name","gender"))
+    id = db.MultiFieldPK("name","gender")
     name = models.CharField(max_length=20)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, default='M')
 

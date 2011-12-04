@@ -6,7 +6,7 @@ from django.db import models
 from compositekey import db
 
 class Counter(models.Model):
-    x = db.MultipleFieldPrimaryKey(fields=('name','name2'))
+    x = db.MultiFieldPK('name','name2')
     name = models.CharField(max_length = 10)
     name2 = models.CharField(max_length = 10)
     value = models.IntegerField()

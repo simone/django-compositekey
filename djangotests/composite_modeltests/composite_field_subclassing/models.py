@@ -11,7 +11,7 @@ from .fields import SmallField, SmallerField, JSONField
 from compositekey import db
 
 class MyModel(models.Model):
-    x = db.MultipleFieldPrimaryKey(fields=('name','data'))
+    x = db.MultiFieldPK('name','data')
     name = models.CharField(max_length=10)
     data = SmallField('small field')
 

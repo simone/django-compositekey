@@ -6,7 +6,7 @@ from django.db import models
 from compositekey import db
 
 class Employee(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=['firstname', 'lastname'])
+    id = db.MultiFieldPK('firstname', 'lastname')
     firstname = models.CharField(max_length=50)
     lastname = models.CharField(max_length=50)
 
@@ -14,7 +14,7 @@ class Employee(models.Model):
         return u'%s %s' % (self.firstname, self.lastname)
 
 class Company(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=['name', 'ceo'])
+    id = db.MultiFieldPK('name', 'ceo')
     name = models.CharField(max_length=100)
     num_employees = models.PositiveIntegerField()
     num_chairs = models.PositiveIntegerField()

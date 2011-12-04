@@ -3,7 +3,7 @@ from django.db import models
 from compositekey import db
 
 class Author(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("name","age"))
+    id = db.MultiFieldPK("name","age")
     name = models.CharField(max_length=100)
     age = models.IntegerField()
     friends = models.ManyToManyField('self', blank=True)
@@ -19,7 +19,7 @@ class Publisher(models.Model):
         return self.name
 
 class Book(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("isbn","name"))
+    id = db.MultiFieldPK("isbn","name")
     isbn = models.CharField(max_length=9)
     name = models.CharField(max_length=255)
     pages = models.IntegerField()

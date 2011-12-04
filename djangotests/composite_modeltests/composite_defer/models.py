@@ -6,12 +6,12 @@ from django.db import models
 from compositekey import db
 
 class Secondary(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("first","second"))
+    id = db.MultiFieldPK("first","second")
     first = models.CharField(max_length=50)
     second = models.CharField(max_length=50)
 
 class Primary(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("name","related"))
+    id = db.MultiFieldPK("name","related")
     name = models.CharField(max_length=50)
     value = models.CharField(max_length=50)
     related = models.ForeignKey(Secondary)

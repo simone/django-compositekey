@@ -2,7 +2,7 @@ from django.db import models
 from compositekey import db
 
 class Article(models.Model):
-    x = db.MultipleFieldPrimaryKey(fields=('headline','pub_date'))
+    x = db.MultiFieldPK('headline','pub_date')
     headline = models.CharField(max_length=100, default='Default headline')
     pub_date = models.DateTimeField()
 

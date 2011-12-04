@@ -28,7 +28,7 @@ class RChild(R):
 
 
 class A(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("name", "name2"))
+    id = db.MultiFieldPK("name", "name2")
     name = models.CharField(max_length=30)
     name2 = models.CharField(max_length=30, default="COMPOSITE")
 

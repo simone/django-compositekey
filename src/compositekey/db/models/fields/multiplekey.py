@@ -10,24 +10,24 @@ from compositekey.db.models.base import patched_model_init
 from compositekey.patch import django_compositekey_patch
 from compositekey.db.models.sql.column import MultiColumn
 
-__all__ = ['MultipleFieldPrimaryKey',]
+__all__ = ['MultiFieldPK',]
 
-class MultipleFieldPrimaryKey(AutoField):
+class MultiFieldPK(AutoField):
     description = _("Composite Primary Keys")
 
     empty_strings_allowed = False
     default_error_messages = {
         'invalid': _(u"'%s' value must be an integer."),
     }
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *fields, **kwargs):
         django_compositekey_patch()
         self.is_composite_primarykeys_field = True
         kwargs['primary_key'] = True
-        self._field_names = kwargs.pop('fields', [])
+        self._field_names = fields
         assert isinstance(self._field_names, (list, tuple)) and len(self._field_names) > 0, \
                "%ss must have fields=[..] with at least 2 fields" % self.__class__.__name__
         kwargs['blank'] = True
-        super(MultipleFieldPrimaryKey, self).__init__(*args, **kwargs)
+        super(MultiFieldPK, self).__init__(**kwargs)
 
     def get_internal_type(self):
         return "CharField"
@@ -42,7 +42,7 @@ class MultipleFieldPrimaryKey(AutoField):
         return value
 
     def contribute_to_class(self, cls, name):
-        super(MultipleFieldPrimaryKey, self).contribute_to_class(cls, name)
+        super(MultiFieldPK, self).contribute_to_class(cls, name)
         opts = cls._meta
         if not self in opts.local_fields: return
 

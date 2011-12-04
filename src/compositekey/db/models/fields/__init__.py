@@ -1,5 +1,5 @@
 __author__ = 'aldaran'
 
-from compositekey.db.models.fields.multiplekey import MultipleFieldPrimaryKey
+from compositekey.db.models.fields.multiplekey import MultiFieldPK
 
-__all__ = ['MultipleFieldPrimaryKey',]
+__all__ = ['MultiFieldPK',]

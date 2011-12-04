@@ -19,7 +19,7 @@ from django.db import models
 from compositekey import db
 
 class Author(models.Model):
-    id = db.MultipleFieldPrimaryKey(fields=("first_name", "last_name"))
+    id = db.MultiFieldPK("first_name", "last_name")
     first_name = models.CharField(max_length=30, db_column='firstname')
     last_name = models.CharField(max_length=30, db_column='last')
 
