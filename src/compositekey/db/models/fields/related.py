@@ -75,7 +75,13 @@ def wrap_fk_monkey_patch(ori_init, ori_contribute_to_class):
                 opts.auto_created._meta._lazy_prepare_fk_actions.append(recheck_unique_together)
 
             else:
-                lazy_init()
+                if isinstance(self.rel.to, str) and self.rel.to in ("self", cls.__name__):
+                    # force here the self relationship and pospone the FM multiple check after all prepare other fields
+                    self.rel.to = cls
+                    opts._prepare = wrap_meta_prepare(opts, opts._prepare)
+                    opts._lazy_prepare_fk_actions.append(lazy_init)
+                else:
+                    lazy_init()
 
     contribute_to_class._sign = "activate_fk_monkey_patch"
     return __init__, contribute_to_class

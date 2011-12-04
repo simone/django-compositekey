@@ -23,7 +23,7 @@ def get_composite_pk(fields, name="pk"):
     def _get(obj):
         # cache, if change the values you can yet identify thre real record
         if not hasattr(obj, cache_name):
-            setattr(obj, cache_name, assemble_pk(*[f.get_prep_value(getattr(obj, f.name)) for f in fields]))
+            setattr(obj, cache_name, assemble_pk(*[getattr(obj, f.name) for f in fields]))
         return getattr(obj, cache_name)
     return _get
 

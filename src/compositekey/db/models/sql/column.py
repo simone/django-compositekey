@@ -1,7 +1,5 @@
 import datetime
-from itertools import repeat
-from django.db.models.query import EmptyResultSet
-from django.db.models.query_utils import QueryWrapper
+from itertools import chain
 from compositekey.db.models.sql.wherein import MultipleColumnsIN
 from compositekey.utils import *
 __author__ = 'aldaran'
@@ -33,8 +31,7 @@ class Atoms(object):
         if not atoms: return "", []
         sql, new_params = atoms
 
-        # [0] is a bad smell
-        return " AND ".join(sql), zip(*new_params)[0]
+        return " AND ".join(sql), chain(*new_params)
 
     def make_atom(self, field_sql, extra, params, lookup_type, value_annot, qn, connection):
         if value_annot is datetime.datetime:
@@ -53,19 +50,18 @@ class Atoms(object):
                               connection.operators[lookup_type] % cast_sql,
                               extra), params)
 
-# todo: check lookup_type VALID for multicolumn
-#        if lookup_type in ('range', 'year'):
-#            return ('%s BETWEEN %%s and %%s' % field_sql, params)
-#        elif lookup_type in ('month', 'day', 'week_day'):
-#            return ('%s = %%s' % connection.ops.date_extract_sql(lookup_type, field_sql),
-#                    params)
-#        elif lookup_type == 'isnull':
-#            return ('%s IS %sNULL' % (field_sql,
-#                (not value_annot and 'NOT ' or '')), ())
-#        elif lookup_type == 'search':
-#            return (connection.ops.fulltext_search_sql(field_sql), params)
-#        elif lookup_type in ('regex', 'iregex'):
-#            return connection.ops.regex_lookup(lookup_type) % (field_sql, cast_sql), params
+        if lookup_type in ('range', 'year'):
+            return ('%s BETWEEN %%s and %%s' % field_sql, params)
+        elif lookup_type in ('month', 'day', 'week_day'):
+            return ('%s = %%s' % connection.ops.date_extract_sql(lookup_type, field_sql),
+                    params)
+        elif lookup_type == 'isnull':
+            return ('%s IS %sNULL' % (field_sql,
+                (not value_annot and 'NOT ' or '')), ())
+        elif lookup_type == 'search':
+            return (connection.ops.fulltext_search_sql(field_sql), params)
+        elif lookup_type in ('regex', 'iregex'):
+            return connection.ops.regex_lookup(lookup_type) % (field_sql, cast_sql), params
 
         raise TypeError('Invalid lookup_type: %r' % lookup_type)
 
