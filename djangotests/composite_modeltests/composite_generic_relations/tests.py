@@ -99,7 +99,11 @@ class GenericRelationsTests(TestCase):
             ],
             comp_func
         )
-        lion.delete()
+        from compositekey.tests import ShowSQL
+        show_sql = ShowSQL("composite_generic_relations")
+        show_sql.enable = False
+        with show_sql:
+            lion.delete()
         self.assertQuerysetEqual(TaggedItem.objects.all(), [
                 (u'clearish', Mineral, quartz.pk),
                 (u'fatty', Animal, platypus.pk),
@@ -158,9 +162,11 @@ class GenericRelationsTests(TestCase):
         cheetah = Animal.objects.create(common_name="cheetah", latin_name='')
         self.assertTrue(tiger.pk)
         self.assertTrue(cheetah.pk)
+        bear = Animal.objects.create(common_name="bear", latin_name='')
+        self.assertTrue(bear.pk)
+        bear = Animal(common_name="bear", latin_name='')
+        self.assertTrue(bear.pk)
         self.assertRaises(IntegrityError, Animal.objects.create, common_name="bear", latin_name=None)
-        bear = Animal(common_name="bear", latin_name=None)
-        self.assertFalse(bear.pk)
 
 
     def test_multiple_gfk(self):
@@ -203,10 +209,14 @@ class GenericRelationsTests(TestCase):
         # deleted since Animal has an explicit GenericRelation to Comparison
         # through first_obj. Comparisons with cheetah as 'other_obj' will not
         # be deleted.
-        cheetah.delete()
-        self.assertQuerysetEqual(Comparison.objects.all(), [
-            "<Comparison: tiger is stronger than None>"
-        ])
+        from compositekey.tests import ShowSQL
+        show_sql = ShowSQL("composite_generic_relations")
+        show_sql.enable = False
+        with show_sql:
+            cheetah.delete()
+            self.assertQuerysetEqual(Comparison.objects.all(), [
+                "<Comparison: tiger is stronger than None>"
+            ])
 
     def test_gfk_subclasses(self):
         # GenericForeignKey should work with subclasses (see #8309)
