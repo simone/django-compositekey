@@ -1,6 +1,7 @@
 from django.core.exceptions import FieldError
 from django.db.models.sql.constants import LHS_JOIN_COL, LHS_ALIAS, RHS_JOIN_COL, TABLE_NAME, JOIN_TYPE, LOOKUP_SEP
 from django.db.models.sql.query import get_order_dir
+from compositekey.db.models.sql.wherein import MultipleColumnsIN
 
 __author__ = 'aldaran'
 
@@ -31,18 +32,26 @@ def wrap_get_from_clause(original_get_from_clause):
             try:
                 name, alias, join_type, lhs, _lhs_col, _col, nullable = self.query.alias_map[alias]
                 lhs_cols, cols = getattr(_lhs_col, "columns", [_lhs_col]), getattr(_col, "columns", [_col])
+                #assert len(lhs_cols) == len(cols), "could not join multiple columns with simple column (%s <> %s)" % (lhs_cols, cols)
             except KeyError:
                 # Extra tables can end up in self.tables, but not in the
                 # alias_map if they aren't in a join. That's OK. We skip them.
                 continue
             alias_str = (alias != name and ' %s' % alias or '')
             if join_type and not first:
-                _on_where = " AND ".join(['%s.%s = %s.%s' %
-                                          (qn(lhs),qn2(lhs_col), qn(alias), qn2(col))
-                                          for lhs_col,col in zip(lhs_cols, cols)
-                ])
-                result.append('%s %s%s ON (%s)'
-                        % (join_type, qn(name), alias_str, _on_where))
+                if len(lhs_cols) == len(cols):
+                    _on_where = " AND ".join(['%s.%s = %s.%s' %
+                                              (qn(lhs),qn2(lhs_col), qn(alias), qn2(col))
+                                              for lhs_col,col in zip(lhs_cols, cols)
+                    ])
+                    result.append('%s %s%s ON (%s)'
+                            % (join_type, qn(name), alias_str, _on_where))
+                else:
+                    #assert len(lhs_cols) == len(cols), "could not join multiple columns with simple column (%s <> %s)" % (lhs_cols, cols)
+                    c1 = MultipleColumnsIN(lhs_cols, alias=qn(lhs)).inner_sql(qn2, self.connection)
+                    c2 = MultipleColumnsIN(cols, alias=qn(alias)).inner_sql(qn2, self.connection)
+                    result.append('%s %s%s ON (%s)'
+                        % (join_type, qn(name), alias_str, '%s = %s' % (c1, c2)))
             else:
                 connector = not first and ', ' or ''
                 result.append('%s%s%s' % (connector, qn(name), alias_str))
