@@ -9,16 +9,18 @@ SEPARATOR = getattr(settings, "SELECT_IN_SQL_SEPARATOR",   '#')
 service = {}
 
 class MultipleColumnsIN(object):
-    def __init__(self, cols, values=[], extra=''):
+    def __init__(self, cols, values=[], extra='', alias=None):
         self.cols = cols
         self.values = values
         self.extra = extra
+        self.alias = alias + "." if alias else ""
+
 
     def inner_sql(self, qn, connection):
-        return service.get(connection.vendor, UseConcat)(self.cols, self.values, self.extra).inner_sql(qn, connection)
+        return service.get(connection.vendor, UseConcat)(self.cols, self.values, self.extra, self.alias).inner_sql(qn, connection)
 
     def as_sql(self, qn, connection):
-        return service.get(connection.vendor, UseConcat)(self.cols, self.values, self.extra).as_sql(qn, connection)
+        return service.get(connection.vendor, UseConcat)(self.cols, self.values, self.extra, self.alias).as_sql(qn, connection)
 
 
 class UseConcat(object):
@@ -28,12 +30,13 @@ class UseConcat(object):
     SQLITE note quote(column)
     """
     concat = "||"
-    cq = "quote(%s)"
+    cq = "quote(%s%s)"
 
-    def __init__(self, cols, values, extra):
+    def __init__(self, cols, values, extra, alias):
         self.cols = cols
         self.values = values
         self.extra = extra
+        self.alias = alias
 
     def quote_v(self, value):
         if isinstance(value, int):
@@ -46,11 +49,11 @@ class UseConcat(object):
         if isinstance(self.cols, (list, tuple)):
             if len(self.cols) > 1:
                 # there are more than one column
-                column = col_sep.join([self.cq % qn(c) for c in self.cols])
+                column = col_sep.join([self.cq % (self.alias, qn(c)) for c in self.cols])
             else: # multiple, but one only column!
                 column = qn(self.cols[0])
         else:
-            column = self.cq % qn(self.cols)
+            column = self.cq % (self.alias, qn(self.cols))
         return column
 
     def as_sql(self, qn=None, connection=None):
@@ -59,7 +62,7 @@ class UseConcat(object):
         if isinstance(self.cols, (list, tuple)):
             if len(self.cols) > 1:
                 # there are more than one column
-                column = col_sep.join([self.cq % qn(c) for c in self.cols])
+                column = col_sep.join([self.cq % (self.alias, qn(c)) for c in self.cols])
                 if self.extra == '':
                     params = [SEPARATOR.join([self.quote_v(v) for v in val]) for val in self.values]
             else: # multiple, but one only column!
@@ -67,7 +70,7 @@ class UseConcat(object):
                 if self.extra == '':
                     params = [self.quote_v(v) for v in zip(*self.values)[0]]
         else:
-            column = self.cq % qn(self.cols)
+            column = self.cq % (self.alias, qn(self.cols))
             params = [self.quote_v(v) for v in self.values]
         return '%s IN %s' % (column, self.extra or "(%s)" % ",".join(["%s"] * len(params))), tuple(params or ())
 
@@ -76,7 +79,7 @@ class UseConcatQuote(UseConcat):
     """
     POSTGRES quote_literal
     """
-    cq = "quote_literal(%s)"
+    cq = "quote_literal(%s%s)"
 
     def quote_v(self, value):
         return "'%s'" % (str(value).replace("'", "''"))
@@ -88,10 +91,11 @@ class UseTuple(object):
     """
     template = '%s IN (%%s)'
 
-    def __init__(self, cols, values, extra):
+    def __init__(self, cols, values, extra, alias):
         self.cols = cols
         self.values = values
         self.extra = extra
+        self.alias = alias
 
     def inner_sql(self, qn=None, connection=None):
         if isinstance(self.cols, (list, tuple)):
