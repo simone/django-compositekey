@@ -1,53 +1,20 @@
-__author__ = 'aldaran'
+== Django Composite Multiple Promary Key
+ * Simone Federici <s.federici@gmail.com> 
 
-from django.db import models
-from compositekey import db
-
-class Book(models.Model):
-    id = db.MultiFieldPK("author", "name")
-    name = models.CharField(max_length=100)
-    author = models.CharField(max_length=100)
-
-    def __unicode__(self):
-        return u"%s (by %s)" % (self.name, self.author)
-
-class BookReal(Book):
-    text = models.CharField(max_length=100)
-
-    def __unicode__(self):
-        return u"REAL: %s" % unicode(self.book_ptr)
-
-class Library(models.Model):
-    name = models.CharField(max_length=100)
-    books = models.ManyToManyField(Book)
-
-    def __unicode__(self):
-        return u"Library: %s" % unicode(self.name)
+=== Links:
+ * https://github.com/simone/django-compositekey/
+ * https://github.com/simone/django-compositekey/wiki
+ * http://pypi.python.org/pypi/django-compositekey/
 
 
-class Biografy(models.Model):
-    id = db.MultiFieldPK("book",)
-    book = models.OneToOneField(Book)
-    text = models.CharField(max_length=100)
+=== Sample
+    from django.db import models
+    from compositekey import db
 
-    def __unicode__(self):
-        return u"BIO: %s" % unicode(self.book)
+    class Book(models.Model):
+        id = db.MultiFieldPK("author", "name")
+        name = models.CharField(max_length=100)
+        author = models.CharField(max_length=100)
 
-class AbstractChapter(models.Model):
-    id = db.MultiFieldPK("book", "number")
-    book = models.ForeignKey(Book, to_field="id",
-        fields_ext={
-            "author": {"db_column" :"b_author", "name" : "_author"},
-            "name"  : {"db_column" :"b_name"},
-        }, related_name="chapter_set")
-    number = models.PositiveSmallIntegerField()
-    title = models.CharField(max_length=100)
-
-    class Meta:
-        abstract = True
-
-    def __unicode__(self):
-        return u"%s (%s) %s" % (self.book_name, self.number, self._author)
-
-class Chapter(AbstractChapter):
-    text = models.CharField(max_length=100)
+        def __unicode__(self):
+            return u"%s (by %s)" % (self.name, self.author)
