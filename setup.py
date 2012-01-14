@@ -1,12 +1,12 @@
 from distutils.core import setup
 
 setup(
-    name = "Django",
+    name = "Django Composite Key",
     version = "0.1-alpha",
     url = 'https://github.com/simone/django-compositekey',
     author = 'Simone Federici',
     author_email = 's.federici@gmail.com',
-    description = 'A high-level Python Web framework that encourages rapid development and clean, pragmatic design.',
+    description = 'Use Django with embedded database that have composite multicolumn primary key and multiple foreignkeys',
     package_dir = {"":"src"},
     packages = [
         "compositekey",
