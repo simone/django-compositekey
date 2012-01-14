@@ -7,7 +7,7 @@ setup(
     author = 'Simone Federici',
     author_email = 's.federici@gmail.com',
     description = 'A high-level Python Web framework that encourages rapid development and clean, pragmatic design.',
-    package_dir = {"":"src/"},
+    package_dir = {"":"src"},
     packages = [
         "compositekey",
         "compositekey.db",
