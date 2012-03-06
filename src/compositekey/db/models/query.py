@@ -1,9 +1,12 @@
+import logging
+
 from django.db.models.query import get_cached_row, get_klass_info
 from compositekey.db.models.query_utils import new_deferred_class_factory as deferred_class_factory
 from compositekey.utils import *
 
 __author__ = 'aldaran'
 
+log = logging.getLogger(__name__)
 
 def iterator(self):
     """
@@ -152,9 +155,8 @@ def activate_iterator_monkey_patch():
     from django.db.models.query import QuerySet, ValuesQuerySet, ValuesListQuerySet
     # monkey patch
     if not hasattr(QuerySet.iterator, "_sign"):
-        print "activate_iterator_monkey_patch"
+        log.debug("activate_iterator_monkey_patch")
         QuerySet.iterator = iterator
         ValuesQuerySet.iterator = v_iterator
         ValuesListQuerySet.iterator = vl_iterator
         QuerySet._update = wrap_update(QuerySet._update)
-

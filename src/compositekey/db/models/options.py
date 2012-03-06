@@ -1,4 +1,5 @@
 import itertools
+import logging
 
 __author__ = 'aldaran'
 
@@ -8,6 +9,8 @@ from django.db.models.options import Options
 def get_fields_with_model(self):
     return [(field, model) for field, model in self._get_fields_with_model() if not getattr(field, "not_in_db", False)]
 get_fields_with_model._sign = "activate_get_fields_with_model_monkey_patch"
+
+log = logging.getLogger(__name__)
 
 def init_name_map(self):
     """
@@ -49,7 +52,7 @@ def nodb_names(self):
 def activate_get_fields_with_model_monkey_patch():
     # monkey patch
     if not hasattr(Options.get_fields_with_model, "_sign"):
-        print "activate_get_fields_with_model_monkey_patch"
+        log.debug("activate_get_fields_with_model_monkey_patch")
         Options._get_fields_with_model = Options.get_fields_with_model
         Options.get_fields_with_model = get_fields_with_model
         Options.init_name_map = init_name_map

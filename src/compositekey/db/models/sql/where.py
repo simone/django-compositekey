@@ -1,6 +1,9 @@
+import logging
+
 from django.db.models.fields import Field
 from django.db.models.sql.where import EmptyShortCircuit, EmptyResultSet, WhereNode, Constraint
 
+log = logging.getLogger(__name__)
 
 def wrap_make_atom(original_make_atom):
     def make_atom(self, child, qn, connection):
@@ -45,6 +48,6 @@ def wrap_process(original):
 def activate_make_atom_monkey_patch():
     # monkey patch
     if not hasattr(WhereNode.make_atom, "_sign"):
-        print "activate_make_atom_monkey_patch"
+        log.debug("activate_make_atom_monkey_patch")
         WhereNode.make_atom = wrap_make_atom(WhereNode.make_atom)
         Constraint.process = wrap_process(Constraint.process)

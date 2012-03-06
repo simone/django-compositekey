@@ -1,9 +1,13 @@
 __author__ = 'aldaran'
 
+import logging
+
 from django.forms import models
 from django.utils.datastructures import SortedDict
 
 __all__ = ["activate_modelform_monkey_patch"]
+
+log = logging.getLogger(__name__)
 
 def wrap_construct_instance(original_construct_instance):
     def construct_instance(form, instance, fields=None, exclude=None):
@@ -160,7 +164,7 @@ def wrap_get_foreign_key(original_get_foreign_key):
 def activate_modelform_monkey_patch():
     # monkey patch
     if not hasattr(models.fields_for_model, "_sign"):
-        print "activate_modelform_monkey_patch"
+        log.debug("activate_modelform_monkey_patch")
         setattr(models, "fields_for_model", wrap_fields_for_model(models.fields_for_model))
         setattr(models, "model_to_dict", wrap_model_to_dict(models.model_to_dict))
         setattr(models, "construct_instance", wrap_construct_instance(models.construct_instance))

@@ -1,7 +1,11 @@
+import logging
+
 from django.core.management import sql
 from django.db import models
 
 __author__ = 'fabio'
+
+log = logging.getLogger(__name__)
 
 def sql_delete(app, style, connection):
     "Returns a list of the DROP TABLE SQL statements for the given app."
@@ -50,5 +54,5 @@ sql_delete._sign = "monkey patch by compositekey"
 
 def activate_sql_delete_monkey_patch():
    if not hasattr(sql.sql_delete, "_sign"):
-        print "activate_sql_delete_monkey_patch"
+        log.info("activate_sql_delete_monkey_patch")
         sql.sql_delete = sql_delete

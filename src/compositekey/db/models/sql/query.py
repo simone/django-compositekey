@@ -1,10 +1,13 @@
 __author__ = 'aldaran'
 
+import logging
+
 from django.core.exceptions import FieldError
 from django.db.models.sql.constants import LHS_JOIN_COL, RHS_JOIN_COL, LOOKUP_SEP, LHS_ALIAS
 from django.db.models.sql.datastructures import MultiJoin
 from django.db.models.sql.query import Query
 
+log = logging.getLogger(__name__)
 
 def add_fields(self, field_names, allow_m2m=True):
     """
@@ -74,7 +77,7 @@ def get_loaded_field_names_cb(self, target, model, fields):
 def activate_add_fields_monkey_patch():
     # monkey patch
     if not hasattr(Query.add_fields, "_sign"):
-        print "activate_add_fields_monkey_patch"
+        log.debug("activate_add_fields_monkey_patch")
         Query.add_fields = add_fields
         Query.deferred_to_columns_cb = deferred_to_columns_cb
         Query.get_loaded_field_names_cb = get_loaded_field_names_cb

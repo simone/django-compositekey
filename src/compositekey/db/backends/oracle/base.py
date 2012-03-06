@@ -1,5 +1,9 @@
 __author__ = 'fabio'
 
+import logging
+
+log = logging.getLogger(__name__)
+
 def sequence_reset_sql(self, style, model_list):
     from django.db import models
     from django.db.backends.oracle.base import _get_sequence_reset_sql
@@ -40,5 +44,6 @@ def activate_sequence_reset_sql_monkey_patch():
         from django.db.backends.oracle.base import DatabaseOperations
         # monkey patch
         if not hasattr(DatabaseOperations.sequence_reset_sql, "_sign"):
-            print "activate_sequence_reset_sql_monkey_patch"
+            log.debug("activate_sequence_reset_sql_monkey_patch")
             DatabaseOperations.sequence_reset_sql = sequence_reset_sql
+            

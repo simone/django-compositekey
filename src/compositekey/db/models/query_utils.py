@@ -1,6 +1,10 @@
 __author__ = 'aldaran'
 
+import logging
+
 from django.db.models.query_utils import deferred_class_factory
+
+log = logging.getLogger(__name__)
 
 def new_deferred_class_factory(model, attrs):
     if hasattr(model._meta, "composite_special_fields"):
@@ -12,9 +16,10 @@ def activate_deferred_class_factory_monkey_patch():
     from django.db.models import query_utils, query, base
     # monkey patch
     if not hasattr(query_utils.deferred_class_factory, "_sign"):
-        print "activate_deferred_class_factory_monkey_patch"
+        log.debug("activate_deferred_class_factory_monkey_patch")
 
         # update all namespaces
         query_utils.deferred_class_factory = new_deferred_class_factory
         query.deferred_class_factory = new_deferred_class_factory
         base.deferred_class_factory = new_deferred_class_factory
+        

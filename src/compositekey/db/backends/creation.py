@@ -1,7 +1,10 @@
+import logging
+
 from django.db.backends.creation import BaseDatabaseCreation
 
 __author__ = 'fabio'
 
+log = logging.getLogger(__name__)
 
 def sql_create_model(self, model, style, known_models=set()):
     """
@@ -114,7 +117,8 @@ sql_for_pending_references._sign = "monkey patch by compositekey"
 
 def activate_sql_create_model_monkey_patch():
     if not hasattr( BaseDatabaseCreation.sql_create_model, "_sign"):
-        print "activate_sql_create_model_monkey_patch"
+        log.debug("activate_sql_create_model_monkey_patch")
         BaseDatabaseCreation.sql_create_model = sql_create_model
         BaseDatabaseCreation.sql_indexes_for_model = sql_indexes_for_model
         BaseDatabaseCreation.sql_for_pending_references = sql_for_pending_references
+        

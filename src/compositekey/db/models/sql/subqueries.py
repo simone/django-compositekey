@@ -1,5 +1,7 @@
 __author__ = 'aldaran'
 
+import logging
+
 from django.db.models.sql.subqueries import DeleteQuery
 from django.db.models.sql.constants import *
 from django.db.models.sql.where import AND
@@ -8,6 +10,8 @@ from compositekey.db.models.sql.wherein import MultipleColumnsIN
 from compositekey.utils import *
 
 __all__ =["activate_delete_monkey_patch"]
+
+log = logging.getLogger(__name__)
 
 def wrap_delete_batch(original_delete_batch):
     from compositekey.utils import disassemble_pk
@@ -42,5 +46,5 @@ def wrap_delete_batch(original_delete_batch):
 def activate_delete_monkey_patch():
     # monkey patch
     if not hasattr(DeleteQuery.delete_batch, "_sign"):
-        print "activate_delete_monkey_patch"
+        log.debug("activate_delete_monkey_patch")
         DeleteQuery.delete_batch = wrap_delete_batch(DeleteQuery.delete_batch)

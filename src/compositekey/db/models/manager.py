@@ -1,8 +1,12 @@
+import logging
+
 from django.db.models.manager import Manager
 
 __author__ = 'aldaran'
 
 __all__ = ["activate_insert_query_monkey_patch"]
+
+log = logging.getLogger(__name__)
 
 def wrap_insert_query(original_insert_query):
 
@@ -17,5 +21,6 @@ def wrap_insert_query(original_insert_query):
 def activate_insert_query_monkey_patch():
     # monkey patch
     if not hasattr(Manager._insert, "_sign"):
-        print "activate_insert_query_monkey_patch"
+        log.debug("activate_insert_query_monkey_patch")
         Manager._insert =  wrap_insert_query(Manager._insert)
+        

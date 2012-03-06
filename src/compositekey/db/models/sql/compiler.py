@@ -1,3 +1,5 @@
+import logging
+
 from django.core.exceptions import FieldError
 from django.db.models.sql.constants import LHS_JOIN_COL, LHS_ALIAS, RHS_JOIN_COL, TABLE_NAME, JOIN_TYPE, LOOKUP_SEP
 from django.db.models.sql.query import get_order_dir
@@ -8,6 +10,8 @@ __author__ = 'aldaran'
 from django.db.models.sql.compiler import SQLCompiler
 
 __all__ = ["activate_get_from_clause_monkey_patch"]
+
+log = logging.getLogger(__name__)
 
 def wrap_get_from_clause(original_get_from_clause):
 
@@ -130,6 +134,6 @@ def find_ordering_name(self, name, opts, alias=None, default_order='ASC',
 def activate_get_from_clause_monkey_patch():
     # monkey patch
     if not hasattr(SQLCompiler.get_from_clause, "_sign"):
-        print "activate_get_from_clause_monkey_patch"
+        log.debug("activate_get_from_clause_monkey_patch")
         SQLCompiler.get_from_clause = wrap_get_from_clause(SQLCompiler.get_from_clause)
         SQLCompiler.find_ordering_name = find_ordering_name

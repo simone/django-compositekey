@@ -1,5 +1,8 @@
 __author__ = 'aldaran'
 
+import logging
+
+log = logging.getLogger(__name__)
 
 def sequence_reset_sql(self, style, model_list):
     from django.db import models
@@ -50,5 +53,6 @@ def activate_pg_sequence_reset_sql_monkey_patch():
         from django.db.backends.postgresql_psycopg2.operations import DatabaseOperations
         # monkey patch
         if not hasattr(DatabaseOperations.sequence_reset_sql, "_sign"):
-            print "activate_sequence_reset_sql_monkey_patch"
+            log.debug("activate_sequence_reset_sql_monkey_patch")
             DatabaseOperations.sequence_reset_sql = sequence_reset_sql
+            
