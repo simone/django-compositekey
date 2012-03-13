@@ -1,4 +1,8 @@
 __author__ = 'aldaran'
+
+import logging
+
+log = logging.getLogger(__name__)
   
 def as_sql(self, qn, connection):
     "Return the aggregate, rendered as SQL."
@@ -45,6 +49,5 @@ def activate_as_sql_monkey_patch():
     from django.db.models.sql.aggregates import Aggregate
     # monkey patch
     if not hasattr(Aggregate.as_sql, "_sign"):
-        print "activate_as_sql_monkey_patch"
+        log.debug("activate_as_sql_monkey_patch")
         Aggregate.as_sql = as_sql
-

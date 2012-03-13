@@ -1,7 +1,10 @@
+import logging
+
 from django.db.backends import BaseDatabaseIntrospection
 
 __author__ = 'fabio'
 
+log = logging.getLogger(__name__)
 
 def sequence_list(self):
     "Returns a list of information about all DB sequences for all models in all apps."
@@ -32,5 +35,6 @@ sequence_list._sign = "monkey patch by compositekey"
 
 def activate_sequence_list_monkey_patch():
     if not hasattr(BaseDatabaseIntrospection.sequence_list, "_sign"):
-        print "activate_sequence_list_monkey_patch"
+        log.debug("activate_sequence_list_monkey_patch")
         BaseDatabaseIntrospection.sequence_list = sequence_list
+        

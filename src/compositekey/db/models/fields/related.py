@@ -1,3 +1,5 @@
+import logging
+
 from django.db.models import signals
 import operator
 
@@ -9,6 +11,8 @@ from compositekey.db.models.base import patched_model_init
 from compositekey.db.models.sql.column import MultiColumn
 
 __all__ = ['activate_fk_monkey_patch',]
+
+log = logging.getLogger(__name__)
 
 def identity(self, value): return value
 
@@ -89,5 +93,5 @@ def wrap_fk_monkey_patch(ori_init, ori_contribute_to_class):
 def activate_fk_monkey_patch():
     # monkey patch
     if not hasattr(ForeignKey.contribute_to_class, "_sign"):
-        print "activate_fk_monkey_patch"
+        log.debug("activate_fk_monkey_patch")
         ForeignKey.__init__, ForeignKey.contribute_to_class = wrap_fk_monkey_patch(ForeignKey.__init__, ForeignKey.contribute_to_class)
