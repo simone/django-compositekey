@@ -1,0 +1,2 @@
+include AUTHORS setup.py
+recursive-include compositekey *.py

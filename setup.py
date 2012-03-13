@@ -1,13 +1,13 @@
 from distutils.core import setup
 
 setup(
-    name = "Django Composite Key",
+    name = "django-compositekey",
     version = "0.1-alpha",
     url = 'https://github.com/simone/django-compositekey',
     author = 'Simone Federici',
     author_email = 's.federici@gmail.com',
     description = 'Use Django with embedded database that have composite multicolumn primary key and multiple foreignkeys',
-    package_dir = {"":"src"},
+    data_files = ["AUTHORS"],
     packages = [
         "compositekey",
         "compositekey.db",
