@@ -8,6 +8,7 @@ setup(
     author_email = 's.federici@gmail.com',
     description = 'Use Django with embedded database that have composite multicolumn primary key and multiple foreignkeys',
     data_files = ["AUTHORS"],
+    package_dir={'': 'src'},
     packages = [
         "compositekey",
         "compositekey.db",
