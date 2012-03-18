@@ -76,7 +76,7 @@ Index: tests/modeltests/fixtures/fixtures/nodes.json
 +]
 Index: tests/modeltests/fixtures/tests.py
 ===================================================================
---- tests/modeltests/fixtures/tests.py	(revision 17100)
+--- tests/modeltests/fixtures/tests.py	(revision 17765)
 +++ tests/modeltests/fixtures/tests.py	(working copy)
 @@ -7,7 +7,7 @@
  from django.db import connection
@@ -87,9 +87,9 @@ Index: tests/modeltests/fixtures/tests.py
  
  
  class TestCaseFixtureLoadingTests(TestCase):
-@@ -354,3 +354,18 @@
+@@ -338,3 +338,18 @@
+             '<Article: Time to reform copyright>',
              '<Article: Poker has no place on ESPN>',
-             '<Article: Python program becomes self aware>'
          ])
 +
 +class TestCaseNaturalNodeFixtureLoadingTests(TestCase):
@@ -108,7 +108,7 @@ Index: tests/modeltests/fixtures/tests.py
 +        ])
 Index: tests/modeltests/fixtures/models.py
 ===================================================================
---- tests/modeltests/fixtures/models.py	(revision 17100)
+--- tests/modeltests/fixtures/models.py	(revision 17765)
 +++ tests/modeltests/fixtures/models.py	(working copy)
 @@ -97,3 +97,23 @@
  
@@ -134,21 +134,3 @@ Index: tests/modeltests/fixtures/models.py
 +
 +    def __unicode__(self):
 +        return "%s (%s)" % self.natural_key()
-Index: django/core/management/commands/dumpdata.py
-===================================================================
---- django/core/management/commands/dumpdata.py	(revision 17100)
-+++ django/core/management/commands/dumpdata.py	(working copy)
-@@ -146,11 +146,11 @@
-             for field in model._meta.fields:
-                 if hasattr(field.rel, 'to'):
-                     rel_model = field.rel.to
--                    if hasattr(rel_model, 'natural_key'):
-+                    if hasattr(rel_model, 'natural_key') and rel_model != model:
-                         deps.append(rel_model)
-             for field in model._meta.many_to_many:
-                 rel_model = field.rel.to
--                if hasattr(rel_model, 'natural_key'):
-+                if hasattr(rel_model, 'natural_key') and field.rel.to != model:
-                     deps.append(rel_model)
-             model_dependencies.append((model, deps))
- 
