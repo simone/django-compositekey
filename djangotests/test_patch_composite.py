@@ -21,5 +21,7 @@ DATABASES = {
     }
 }
 
+SECRET_KEY = "django_tests_secret_key"
+
 from compositekey.patch import django_compositekey_patch
 django_compositekey_patch()

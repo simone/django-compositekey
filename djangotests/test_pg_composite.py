@@ -28,3 +28,5 @@ DATABASES = {
         'PASSWORD' : 'compositekey',
     }
 }
+
+SECRET_KEY = "django_tests_secret_key"

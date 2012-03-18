@@ -30,3 +30,5 @@ DATABASES = {
         'PASSWORD' : 'db2'
     }
 }
+
+SECRET_KEY = "django_tests_secret_key"

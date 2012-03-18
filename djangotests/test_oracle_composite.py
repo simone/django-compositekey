@@ -34,3 +34,5 @@ DATABASES = {
         'TEST_TBLSPACE_TMP': 'django_test_other_temp',
     }
 }
+
+SECRET_KEY = "django_tests_secret_key"

@@ -19,6 +19,9 @@ DATABASES = {
         'HOST'  : 'localhost',
         'USER'  : 'compositekey',
         'PASSWORD' : 'compositekey',
+        'OPTIONS': {
+            'init_command': 'SET storage_engine=INNODB',
+        }
     },
     'other': {
         'ENGINE': 'django.db.backends.mysql',
@@ -26,5 +29,10 @@ DATABASES = {
         'HOST'  : 'localhost',
         'USER'  : 'compositekey',
         'PASSWORD' : 'compositekey',
+        'OPTIONS': {
+            'init_command': 'SET storage_engine=INNODB',
+        }
     }
 }
+
+SECRET_KEY = "django_tests_secret_key"
