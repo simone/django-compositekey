@@ -72,6 +72,10 @@ class UseConcat(object):
         else:
             column = self.cq % (self.alias, qn(self.cols))
             params = [self.quote_v(v) for v in self.values]
+
+        if not self.extra and not params:
+            # where in in a empty list, not all dataase support an empty list, this is a workaround
+            return '1 = 2', tuple()
         return '%s IN %s' % (column, self.extra or "(%s)" % ",".join(["%s"] * len(params))), tuple(params or ())
 
 
