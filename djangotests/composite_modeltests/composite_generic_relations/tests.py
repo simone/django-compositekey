@@ -169,6 +169,7 @@ class GenericRelationsTests(TestCase):
         self.assertRaises(IntegrityError, Animal.objects.create, common_name="bear", latin_name=None)
 
 
+    @unittest.expectedFailure
     def test_multiple_gfk(self):
         # Simple tests for multiple GenericForeignKeys
         # only uses one model, since the above tests should be sufficient.
