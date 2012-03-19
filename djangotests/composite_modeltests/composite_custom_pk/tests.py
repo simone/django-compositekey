@@ -177,9 +177,8 @@ class CustomPKTests(TestCase):
     def test_required_pk(self):
         # The primary key must be specified, so an error is raised if you
         # try to create an object without it.
-        with ShowSQL():
-            sid = transaction.savepoint()
-            self.assertRaises(IntegrityError,
-                Employee.objects.create, first_name="Tom", last_name="Smith"
-            )
-            transaction.savepoint_rollback(sid)
+        sid = transaction.savepoint()
+        self.assertRaises(IntegrityError,
+            Employee.objects.create, first_name="Tom", last_name="Smith"
+        )
+        transaction.savepoint_rollback(sid)

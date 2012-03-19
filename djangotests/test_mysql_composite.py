@@ -21,6 +21,8 @@ DATABASES = {
         'PASSWORD' : 'compositekey',
         'OPTIONS': {
             'init_command': 'SET storage_engine=INNODB',
+            'use_unicode':True,
+            'charset': 'utf8',
         }
     },
     'other': {
@@ -31,6 +33,8 @@ DATABASES = {
         'PASSWORD' : 'compositekey',
         'OPTIONS': {
             'init_command': 'SET storage_engine=INNODB',
+            'use_unicode':True,
+            'charset': 'utf8',
         }
     }
 }
