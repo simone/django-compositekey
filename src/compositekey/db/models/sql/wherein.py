@@ -133,7 +133,7 @@ class UseTupleWithDummy(UseTuple):
     """
     MYSQL
     """
-    template = '%s IN (%%s, (null,null))'
+    template = '%s IN (%%s)'
 
 
 class UseTupleValues(UseTuple):

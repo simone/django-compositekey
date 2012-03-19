@@ -1,13 +1,13 @@
 import logging
 
 from django.core.exceptions import FieldError
-from django.db.models.sql.constants import LHS_JOIN_COL, LHS_ALIAS, RHS_JOIN_COL, TABLE_NAME, JOIN_TYPE, LOOKUP_SEP
-from django.db.models.sql.query import get_order_dir
+from django.db.models.sql.constants import LHS_JOIN_COL, LHS_ALIAS, RHS_JOIN_COL, TABLE_NAME, JOIN_TYPE, LOOKUP_SEP, MULTI
+from django.db.models.sql.query import get_order_dir, Query
 from compositekey.db.models.sql.wherein import MultipleColumnsIN
 
 __author__ = 'aldaran'
 
-from django.db.models.sql.compiler import SQLCompiler
+from django.db.models.sql.compiler import SQLCompiler, SQLUpdateCompiler
 
 __all__ = ["activate_get_from_clause_monkey_patch"]
 
@@ -130,6 +130,55 @@ def find_ordering_name(self, name, opts, alias=None, default_order='ASC',
     return [(alias, col, order)]
 
 
+def pre_sql_setup(self):
+    """
+    If the update depends on results from other tables, we need to do some
+    munging of the "where" conditions to match the format required for
+    (portable) SQL updates. That is done here.
+
+    Further, if we are going to be running multiple updates, we pull out
+    the id values to update at this point so that they don't change as a
+    result of the progressive updates.
+    """
+    self.query.select_related = False
+    self.query.clear_ordering(True)
+    super(SQLUpdateCompiler, self).pre_sql_setup()
+    count = self.query.count_active_tables()
+    if not self.query.related_updates and count == 1:
+        return
+
+    # We need to use a sub-select in the where clause to filter on things
+    # from other tables.
+    query = self.query.clone(klass=Query)
+    query.bump_prefix()
+    query.extra = {}
+    query.select = []
+    query.add_fields([query.model._meta.pk.name])
+    must_pre_select = count > 1 and not self.connection.features.update_can_self_select
+
+    # Now we adjust the current query: reset the where clause and get rid
+    # of all the tables we don't need (since they're in the sub-select).
+    self.query.where = self.query.where_class()
+    if self.query.related_updates or must_pre_select:
+        # Either we're using the idents in multiple update queries (so
+        # don't want them to change), or the db backend doesn't support
+        # selecting from the updating table (e.g. MySQL).
+        idents = []
+        multiple = hasattr(query.model._meta.pk, "fields")
+        if multiple:
+            query.select = []
+            query.add_fields([f.name for f in query.model._meta.pk.fields])
+        for rows in query.get_compiler(self.using).execute_sql(MULTI):
+            idents.extend([assemble_pk(*r) if multiple else r[0] for r in rows])
+        self.query.add_filter(('pk__in', idents))
+        self.query.related_ids = idents
+    else:
+        # The fast path. Filters and updates in one query.
+        self.query.add_filter(('pk__in', query))
+    for alias in self.query.tables[1:]:
+        self.query.alias_refcount[alias] = 0
+
+
 
 def activate_get_from_clause_monkey_patch():
     # monkey patch
@@ -137,3 +186,4 @@ def activate_get_from_clause_monkey_patch():
         log.debug("activate_get_from_clause_monkey_patch")
         SQLCompiler.get_from_clause = wrap_get_from_clause(SQLCompiler.get_from_clause)
         SQLCompiler.find_ordering_name = find_ordering_name
+        SQLUpdateCompiler.pre_sql_setup = pre_sql_setup
