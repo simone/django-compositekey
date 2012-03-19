@@ -1,13 +1,15 @@
+from itertools import izip
 import logging
 
 from django.core.exceptions import FieldError
 from django.db.models.sql.constants import LHS_JOIN_COL, LHS_ALIAS, RHS_JOIN_COL, TABLE_NAME, JOIN_TYPE, LOOKUP_SEP, MULTI
 from django.db.models.sql.query import get_order_dir, Query
 from compositekey.db.models.sql.wherein import MultipleColumnsIN
+from compositekey.utils import assemble_pk
 
 __author__ = 'aldaran'
 
-from django.db.models.sql.compiler import SQLCompiler, SQLUpdateCompiler
+from django.db.models.sql.compiler import SQLCompiler, SQLUpdateCompiler, SQLInsertCompiler
 
 __all__ = ["activate_get_from_clause_monkey_patch"]
 
@@ -179,6 +181,60 @@ def pre_sql_setup(self):
         self.query.alias_refcount[alias] = 0
 
 
+def as_sql(self):
+    # We don't need quote_name_unless_alias() here, since these are all
+    # going to be column names (so we can avoid the extra overhead).
+    qn = self.connection.ops.quote_name
+    opts = self.query.model._meta
+    result = ['INSERT INTO %s' % qn(opts.db_table)]
+
+    has_fields = bool(self.query.fields)
+    fields = self.query.fields if has_fields else [opts.pk]
+    result.append('(%s)' % ', '.join([qn(f.column) for f in fields]))
+
+    if has_fields:
+        params = values = [
+        [
+        f.get_db_prep_save(getattr(obj, f.attname) if self.query.raw else f.pre_save(obj, True), connection=self.connection)
+        for f in fields
+        ]
+        for obj in self.query.objs
+        ]
+    else:
+        values = [[self.connection.ops.pk_default_value()] for obj in self.query.objs]
+        params = [[]]
+        fields = [None]
+    can_bulk = (not any(hasattr(field, "get_placeholder") for field in fields) and
+                not self.return_id and self.connection.features.has_bulk_insert)
+
+    if can_bulk:
+        placeholders = [["%s"] * len(fields)]
+    else:
+        placeholders = [
+        [self.placeholder(field, v) for field, v in izip(fields, val)]
+        for val in values
+        ]
+    if self.return_id and self.connection.features.can_return_id_from_insert:
+        params = params[0]
+        result.append("VALUES (%s)" % ", ".join(placeholders[0]))
+        r_fmt, r_params = self.connection.ops.return_insert_id()
+        if not hasattr(opts.pk.column, "columns"):
+            col = "%s.%s" % (qn(opts.db_table), qn(opts.pk.column))
+        else:
+            col = 1
+        result.append(r_fmt % col)
+        params += r_params
+        return [(" ".join(result), tuple(params))]
+    if can_bulk:
+        result.append(self.connection.ops.bulk_insert_sql(fields, len(values)))
+        return [(" ".join(result), tuple([v for val in values for v in val]))]
+    else:
+        return [
+            (" ".join(result + ["VALUES (%s)" % ", ".join(p)]), vals)
+            for p, vals in izip(placeholders, params)
+        ]
+
+
 
 def activate_get_from_clause_monkey_patch():
     # monkey patch
@@ -187,3 +243,4 @@ def activate_get_from_clause_monkey_patch():
         SQLCompiler.get_from_clause = wrap_get_from_clause(SQLCompiler.get_from_clause)
         SQLCompiler.find_ordering_name = find_ordering_name
         SQLUpdateCompiler.pre_sql_setup = pre_sql_setup
+        SQLInsertCompiler.as_sql = as_sql
