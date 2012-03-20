@@ -13,14 +13,15 @@ Links:
 
 Composite PK
 ------------
+```python
+from django.db import models
+from compositekey import db
 
-    from django.db import models
-    from compositekey import db
-
-    class Book(models.Model):
-        id = db.MultiFieldPK("author", "name")
-        name = models.CharField(max_length=100)
-        author = models.CharField(max_length=100)
+class Book(models.Model):
+    id = db.MultiFieldPK("author", "name")
+    name = models.CharField(max_length=100)
+    author = models.CharField(max_length=100)
+```
 
 Inheritance
 -----------
