@@ -16,7 +16,7 @@
         name = models.CharField(max_length=100)
         author = models.CharField(max_length=100)
 
-=== Inerithance
+=== Inheritance
     class BookReal(Book):
         text = models.CharField(max_length=100)
 
