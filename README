@@ -7,7 +7,7 @@
  * http://pypi.python.org/pypi/django-compositekey/
 
 
-=== Sample
+=== Composite PK  
     from django.db import models
     from compositekey import db
 
@@ -16,5 +16,36 @@
         name = models.CharField(max_length=100)
         author = models.CharField(max_length=100)
 
-        def __unicode__(self):
-            return u"%s (by %s)" % (self.name, self.author)
+=== Inerithance
+    class BookReal(Book):
+        text = models.CharField(max_length=100)
+
+=== Many To Many 
+    class Library(models.Model):
+        name = models.CharField(max_length=100)
+        books = models.ManyToManyField(Book)
+
+=== One To One + Composite PK related  
+    class Biografy(models.Model):
+        id = db.MultiFieldPK("book")
+        book = models.OneToOneField(Book)
+        text = models.CharField(max_length=100)
+
+=== Abstract ForeignKey + field extensions syntax
+    class AbstractChapter(models.Model):
+        id = db.MultiFieldPK("book", "num")
+        book = models.ForeignKey(Book, to_field="id",
+            fields_ext={
+                "author": {"db_column" :"b_author", "name" : "_author"},
+                "name"  : {"db_column" :"b_name"},
+            }, related_name="chapter_set")
+        num = models.PositiveSmallIntegerField()
+        title = models.CharField(max_length=100)
+    
+        class Meta:
+            abstract = True
+
+=== ForeignKey Implementation
+    class Chapter(AbstractChapter):
+        text = models.CharField(max_length=100)
+
