@@ -1,14 +1,19 @@
 Django Composite Key
 ====================
+
  * Simone Federici <s.federici@gmail.com> 
 
-=== Links:
+Links:
+------
+
  * https://github.com/simone/django-compositekey/
  * https://github.com/simone/django-compositekey/wiki
  * http://pypi.python.org/pypi/django-compositekey/
 
 
-=== Composite PK  
+Composite PK
+------------
+
     from django.db import models
     from compositekey import db
 
@@ -17,22 +22,30 @@ Django Composite Key
         name = models.CharField(max_length=100)
         author = models.CharField(max_length=100)
 
-=== Inheritance
+Inheritance
+-----------
+
     class BookReal(Book):
         text = models.CharField(max_length=100)
 
-=== Many To Many 
+Many To Many 
+------------
+
     class Library(models.Model):
         name = models.CharField(max_length=100)
         books = models.ManyToManyField(Book)
 
-=== One To One + Composite PK related  
+One To One + Composite PK related
+---------------------------------
+
     class Biografy(models.Model):
         id = db.MultiFieldPK("book")
         book = models.OneToOneField(Book)
         text = models.CharField(max_length=100)
 
-=== Abstract ForeignKey + field extensions syntax
+Abstract ForeignKey + field extensions syntax
+---------------------------------------------
+
     class AbstractChapter(models.Model):
         id = db.MultiFieldPK("book", "num")
         book = models.ForeignKey(Book, to_field="id",
@@ -46,13 +59,17 @@ Django Composite Key
         class Meta:
             abstract = True
 
-=== ForeignKey Implementation
+ForeignKey Implementation
+-------------------------
+
     class Chapter(AbstractChapter):
         text = models.CharField(max_length=100)
 
 
 
-=== SQLALL sqlite example
+SQLALL sqlite example
+---------------------
+
     CREATE TABLE "sample_book" (
         "name" varchar(100) NOT NULL,
         "author" varchar(100) NOT NULL,
