@@ -91,33 +91,33 @@ class ModelTest(TestCase):
 
     def test_doc_1(self):
         b = Book.objects.create(name="Orgoglio e Pregiudizio", author="Austen")
-        self.assertEqual(b.pk, 'Austen-Orgoglio e Pregiudizio')
+        self.assertEqual(b.pk, assemble_pk('Austen', 'Orgoglio e Pregiudizio'))
         c = b.chapter_set.create(num=1, title="Primo", text="Ciao")
-        self.assertEqual(c.pk, 'Austen-Orgoglio e Pregiudizio-1')
+        self.assertEqual(c.pk, assemble_pk('Austen', 'Orgoglio e Pregiudizio', 1))
         b2 = Book.objects.get(pk=b.pk)
-        self.assertEqual(b2.pk, 'Austen-Orgoglio e Pregiudizio')
+        self.assertEqual(b2.pk, assemble_pk('Austen', 'Orgoglio e Pregiudizio'))
         c2 = Chapter.objects.get(pk=c.pk)
-        self.assertEqual(c2.pk, 'Austen-Orgoglio e Pregiudizio-1')
+        self.assertEqual(c2.pk, assemble_pk('Austen', 'Orgoglio e Pregiudizio', 1))
         c3 = b.chapter_set.get(num=1)
-        self.assertEqual(c3.pk, 'Austen-Orgoglio e Pregiudizio-1')
+        self.assertEqual(c3.pk, assemble_pk('Austen', 'Orgoglio e Pregiudizio', 1))
 
     def test_doc_2(self):
         r = BookReal.objects.create(name='REAL', author='Simone', text='9788877873859')
-        self.assertEqual(r.pk, 'Simone-REAL')
+        self.assertEqual(r.pk, assemble_pk('Simone', 'REAL'))
         self.assertEqual(len(BookReal.objects.filter(pk=r.pk)), 1)
         self.assertEqual(len(Book.objects.filter(pk=r.pk)), 1)
-        self.assertEqual(BookReal.objects.get(pk=r.pk).pk, 'Simone-REAL')
+        self.assertEqual(BookReal.objects.get(pk=r.pk).pk, assemble_pk('Simone', 'REAL'))
 
     def test_delete_chapters(self):
         b = Book.objects.create(name="Orgoglio e Pregiudizio", author="Delete")
         b.delete()
         self.assertEqual(0, Book.objects.filter(name="Orgoglio e Pregiudizio", author="Delete").count())
         b = Book.objects.create(name="Orgoglio e Pregiudizio", author="Austen")
-        self.assertEqual(b.pk, 'Austen-Orgoglio e Pregiudizio')
+        self.assertEqual(b.pk, assemble_pk('Austen', 'Orgoglio e Pregiudizio'))
         c1 = b.chapter_set.create(num=1, title="Primo", text="Ciao")
         c2 = b.chapter_set.create(num=2, title="Secondo", text="Ciao")
-        self.assertEqual(c1.pk, 'Austen-Orgoglio e Pregiudizio-1')
-        self.assertEqual(c2.pk, 'Austen-Orgoglio e Pregiudizio-2')
+        self.assertEqual(c1.pk, assemble_pk('Austen', 'Orgoglio e Pregiudizio', 1))
+        self.assertEqual(c2.pk, assemble_pk('Austen', 'Orgoglio e Pregiudizio', 2))
         self.assertEqual(2, b.chapter_set.count())
         c1.delete()
         self.assertEqual(1, b.chapter_set.count())
@@ -162,27 +162,62 @@ class ModelTest(TestCase):
 class UtilsTest(TestCase):
 
     def test_pk(self):
-        self.assertEquals(['TEST'], disassemble_pk('TEST'))
-        self.assertEquals(['1', '2'], disassemble_pk(assemble_pk("1", "2")))
+        self.assertEquals(('TEST',), disassemble_pk("'TEST'"))
+        self.assertEquals(('1', '2'), disassemble_pk(assemble_pk("1", "2")))
 
     def test_empty(self):
         #self.assertEquals(None, assemble_pk(None))
         self.assertEquals(None, assemble_pk(None))#NONE_CHAR
-        self.assertEquals('', assemble_pk(''))
-        self.assertEquals([], disassemble_pk(None))
-        self.assertEquals([''], disassemble_pk(''))
+        self.assertEquals("''", assemble_pk(''))
+        self.assertEquals((), disassemble_pk(None))
+        self.assertEquals((None,), disassemble_pk(''))
 
     def test_reversibility(self):
         # '', None, NOT ammissible
-        params = ['ab', 'a'+SEP+'b', 'a'+ESCAPE_CHAR+SEP+'b', '123', 'a'+SEP, 'b'+ESCAPE_CHAR, 'c'+ESCAPE_CHAR+SEP, SEP, ESCAPE_CHAR, ESCAPE_CHAR+SEP, SEP+ESCAPE_CHAR, NONE_CHAR , 'd'+ESCAPE_CHAR+SEP]
+        params = ('ab', "'a'-'b'", "'a-b'", "'123'", "'a'-'bc-'", "-", "''''", "'-'", "-''''", '' , "'d''-")
         self.assertEquals(params, disassemble_pk(assemble_pk(*params)))
+        
+    def main(self):
+        self.assertEquals(disassemble_pk(""), (None,))
+        self.assertEquals(disassemble_pk("''"), ('',))
+        self.assertEquals(disassemble_pk("''-"), ('', None))
+        self.assertEquals(disassemble_pk("''-''"), ('', ''))
+        self.assertEquals(disassemble_pk("''-''"), ('', ''))
+        self.assertEquals(disassemble_pk("-''"), (None, ''))
+        self.assertEquals(disassemble_pk("'--12'-'34'"), ('--12', '34'))
+        self.assertEquals(disassemble_pk("'12'-'34'"), ('12', '34'))
+        self.assertEquals(disassemble_pk("'12'--'46'"), ('12', None, '46'))
+        self.assertEquals(disassemble_pk("'12--'--'46'"), ('12--', None, '46'))
+        self.assertEquals(disassemble_pk("'12--'--'4''6'"), ('12--', None, "4'6"))
+        self.assertEquals(disassemble_pk("'12'-'34'-'46'"), ('12', '34', '46'))
+        self.assertEquals(disassemble_pk("'12''-''34'-'46'"), ("12'-'34", '46'))
+    
+        self.assertEquals(disassemble_pk(assemble_pk(None), 1), (None,))
+        self.assertEquals(disassemble_pk(assemble_pk('')), ('',))
+        self.assertEquals(disassemble_pk(assemble_pk('', None), 2), (None, None))
+        self.assertEquals(disassemble_pk(assemble_key('', None), 2), ('', None))
+        self.assertEquals(disassemble_pk(assemble_pk('', '')), ('', ''))
+        self.assertEquals(disassemble_pk(assemble_key(None, '')), (None, ''))
+        self.assertEquals(disassemble_pk(assemble_pk(None, ''), 2), (None, None))
+        self.assertEquals(disassemble_pk(assemble_pk("--12", "34")), ('--12', '34'))
+        self.assertEquals(disassemble_pk(assemble_pk("--12", 34)), ('--12', '34'))
+        self.assertEquals(disassemble_pk(assemble_pk(12, 34)), ('12', '34'))
+        self.assertEquals(disassemble_pk(assemble_key(12, None, "46")), ('12', None, '46'))
+        self.assertEquals(disassemble_pk(assemble_pk(12, None, "46"), 3), (None, None, None))
+        self.assertEquals(disassemble_pk(assemble_key("12--", None, 46)), ('12--', None, '46'))
+        self.assertEquals(disassemble_pk(assemble_pk("12--", None, 46), 3), (None, None, None))
+        self.assertEquals(disassemble_pk(assemble_key("12--", None, "4'6")), ('12--', None, "4'6"))
+        self.assertEquals(disassemble_pk(assemble_pk("12--", None, "4'6"), 3), (None, None, None, ))
+        self.assertEquals(disassemble_pk(assemble_pk(12, 34, 46)), ('12', '34', '46'))
+        self.assertEquals(disassemble_pk(assemble_pk("12'-'34", 46)), ("12'-'34", '46'))
+        self.assertEquals(disassemble_pk(assemble_pk("-'''''-", "'4'6'")), ("-'''''-", "'4'6'"))
 
     def test_not_reversibility(self):    
-        self.assertEquals([], disassemble_pk(assemble_pk(None, '', 'TEST')))
+        self.assertEquals((), disassemble_pk(assemble_pk(None, '', 'TEST')))
 
     def test_unicode(self):
         u = u'\u6797\u539f \u3081\u3050\u307f'
-        self.assertEquals([u], disassemble_pk(assemble_pk(u)))
+        self.assertEquals((u,), disassemble_pk(assemble_pk(u)))
 
 class AdminTest(TestCase):
 

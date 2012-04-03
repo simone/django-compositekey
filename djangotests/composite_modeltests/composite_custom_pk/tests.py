@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
+from compositekey.utils import assemble_pk
 
 from django.db import transaction, IntegrityError
 from django.test import TestCase, skipIfDBFeature
@@ -31,8 +32,8 @@ class CustomPKTests(TestCase):
             unicode
         )
 
-        self.assertEqual(Employee.objects.get(pk="123-Jones"), dan)
-        self.assertEqual(Employee.objects.get(pk="456-Bones"), fran)
+        self.assertEqual(Employee.objects.get(pk=assemble_pk("123", "Jones")), dan)
+        self.assertEqual(Employee.objects.get(pk=assemble_pk(456, "Bones")), fran)
 
         self.assertRaises(Employee.DoesNotExist,
             lambda: Employee.objects.get(pk=42)
@@ -40,24 +41,24 @@ class CustomPKTests(TestCase):
 
         # Use the name of the primary key, rather than pk.
         self.assertEqual(Employee.objects.get(employee_code=123), dan)
-        self.assertEqual(Employee.objects.get(pk="456-Bones"), fran)
-        self.assertEqual(Employee.objects.get(id="456-Bones"), fran)
+        self.assertEqual(Employee.objects.get(pk=assemble_pk(456, "Bones")), fran)
+        self.assertEqual(Employee.objects.get(id=assemble_pk("456", "Bones")), fran)
         # pk can be used as a substitute for the primary key.
         self.assertQuerysetEqual(
-            Employee.objects.filter(pk__in=["123-Jones", "456-Bones"]), [
+            Employee.objects.filter(pk__in=[assemble_pk("123", "Jones"), assemble_pk("456","Bones")]), [
                 "Fran Bones",
                 "Dan Jones",
             ],
             unicode
         )
         # The primary key can be accessed via the pk property on the model.
-        e = Employee.objects.get(pk="123-Jones")
-        self.assertEqual(e.pk, "123-Jones")
+        e = Employee.objects.get(pk=assemble_pk("123", "Jones"))
+        self.assertEqual(e.pk, assemble_pk("123", "Jones"))
         # Or we can use the real attribute name for the primary key:
         self.assertEqual(e.employee_code, 123)
 
         # Fran got married and changed her last name.
-        fran = Employee.objects.get(pk="456-Bones")
+        fran = Employee.objects.get(pk=assemble_pk("456", "Bones"))
         fran.last_name = "Jones"
         fran.save()
 
@@ -69,8 +70,8 @@ class CustomPKTests(TestCase):
             unicode
         )
 
-        emps = Employee.objects.in_bulk(["123-Jones", "456-Jones"])
-        self.assertEqual(emps["123-Jones"], dan)
+        emps = Employee.objects.in_bulk([assemble_pk("123", "Jones"), assemble_pk("456", "Jones")])
+        self.assertEqual(emps[assemble_pk("123", "Jones")], dan)
 
         b = Business.objects.create(name="Sears")
         b.employees.add(dan, fran)
@@ -128,7 +129,7 @@ class CustomPKTests(TestCase):
             lambda b: b.name
         )
         self.assertQuerysetEqual(
-            Business.objects.filter(employees__pk="123-Jones"), [
+            Business.objects.filter(employees__pk=assemble_pk("123", "Jones")), [
                 "Sears",
             ],
             lambda b: b.name,

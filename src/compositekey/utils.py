@@ -1,37 +1,9 @@
-__author__ = 'fabio'
+__author__ = 'aldaran'
 
-from django.conf import settings
+import re
+P = re.compile("-('([^']+|'')*'|)")
 
-__all__ = ["assemble_pk", "disassemble_pk", "SEP", "ESCAPE_CHAR", "NONE_CHAR"]
-
-SEP, ESCAPE_CHAR, NONE_CHAR = getattr(settings, "COMPOSITE_PK_SEPARATOR_ESCAPE", '-.N')
-
-
-def assemble_pk(*values):
-    if len(values) == 1:
-        return values[0]
-
-    # No ammissible multiplekey with a Null part (blank values are ok)
-    # because django features (ex inline) check if a key is None for new forms
-    for val in values:
-        if val is None:
-            return None
-
-    result = ''
-    for value in values:
-
-        if not value == None:
-            value = unicode(value)
-
-            for special_char in (ESCAPE_CHAR, SEP, NONE_CHAR):
-                if special_char in value:
-                    value = value.replace(special_char, ESCAPE_CHAR+special_char)
-        else:
-            value = NONE_CHAR
-
-        result = result + value + SEP
-
-    return result[:-1]
+__all__ = ["assemble_pk", "disassemble_pk", "assemble_key"]
 
 def dimention_list_generator(l, size):
     i = iter(l)
@@ -40,45 +12,19 @@ def dimention_list_generator(l, size):
     for i in xrange(size - len(l)):
         yield
 
-def disassemble_pk(comp_pk, length=None):
-    """
-    >>> disassemble_pk(assemble_pk("1", "2"))
-    ['1', '2']
-    """
-    results = []
-    if comp_pk is not None:
-        comp_pk = unicode(comp_pk)
-        curr_index = 0
-        index = 0
-        while index < len(comp_pk):
+def assemble_pk(*parts):
+    if None in parts:return None
+    return assemble_key(*parts)
 
-            if comp_pk[index] == ESCAPE_CHAR:
-                if comp_pk[index+1] in (SEP, ESCAPE_CHAR, NONE_CHAR):
-                    index = index+2
-                    continue
+def assemble_key(*parts):
+    return "-".join(["'%s'" % (str(p) if not isinstance(p, (str, unicode)) else p).replace("'", "''") if p is not None else '' for p in parts])
 
-            if comp_pk[index] == SEP:
-                value = comp_pk[curr_index:index].replace(ESCAPE_CHAR+SEP, SEP)
-                value = value.replace(2*ESCAPE_CHAR, ESCAPE_CHAR)
-
-                if value == NONE_CHAR:
-                    results.append(None)
-                else:
-                    value = value.replace(ESCAPE_CHAR+NONE_CHAR, NONE_CHAR)
-                    results.append(unicode(value))
-                curr_index = index+1
-
-            index = index+1
-        else:
-            value = comp_pk[curr_index:].replace(ESCAPE_CHAR+SEP, SEP)
-            value = value.replace(2*ESCAPE_CHAR, ESCAPE_CHAR)
-
-            if value == NONE_CHAR:
-                results.append(None)
-            else:
-                value = value.replace(ESCAPE_CHAR+NONE_CHAR, NONE_CHAR)
-                results.append(unicode(value))
-
-    if length > 0:
-        results = list(dimention_list_generator(results, length))
+def disassemble_pk(key, length=None):
+    key = str(key) if key is not None and not isinstance(key, (str, unicode)) else key
+    if key is None or key.count("'") % 2 == 1:
+        results = tuple()
+    else:
+        results = tuple([x[0][1:-1].replace("''", "'") if x[0] else None for x in P.findall("-"+key)])
+    if length > 0 and len(results) != length:
+        results = tuple(dimention_list_generator(results, length))
     return results
