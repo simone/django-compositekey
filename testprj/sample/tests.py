@@ -147,7 +147,7 @@ class UtilsTest(TestCase):
         params = ['ab', 'a'+SEP+'b', 'a'+ESCAPE_CHAR+SEP+'b', '123', 'a'+SEP, 'b'+ESCAPE_CHAR, 'c'+ESCAPE_CHAR+SEP, SEP, ESCAPE_CHAR, ESCAPE_CHAR+SEP, SEP+ESCAPE_CHAR, NONE_CHAR , 'd'+ESCAPE_CHAR+SEP]
         self.assertEquals(params, disassemble_pk(assemble_pk(*params)))
 
-    def test_not_reversibility(self):    
+    def test_not_reversibility(self):
         self.assertEquals([], disassemble_pk(assemble_pk(None, '', 'TEST')))
 
 
@@ -188,6 +188,9 @@ class AdminTest(TestCase):
         }
 
         response = self.client.post('/admin/sample/book/%s/' % b.pk, post_data)
+        print dir(response)
+        print response.status_code
+        print response.context["object_id"]
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["location"], 'http://testserver/admin/sample/book/')
 
@@ -227,3 +230,57 @@ class FormTest(TestCase):
             'form-0-text': u'',
         })
         formset.save()
+
+
+class InitTest(TestCase):
+
+    def test_usual_class(self):
+
+        class C1(object):
+            pass
+
+        self.assertIs(C1.__init__, object.__init__)
+
+        class C2(object):
+            def __init__(self):
+                pass
+
+        self.assertIs(super(C2, C2).__init__, object.__init__)
+        # a bit odd but the same
+        self.assertIs(super(C2, C2).__init__, C1.__init__)
+
+    def test_usual_model(self):
+        from django.db.models import Model, CharField
+
+        class M1(Model):
+            f = CharField(max_length=1)
+
+        class M2(Model):
+            f = CharField(max_length=1)
+            def __init__(self, *a, **kw):
+                return super(M2, self).__init__(*a, **kw)
+
+        self.assertIs(super(M2, M2).__init__, M1.__init__)
+
+    def test_super(self):
+        from django.db.models import Model, CharField
+        from compositekey.db import MultiFieldPK
+
+        class M1(Model):
+            id = MultiFieldPK("a", "b")
+            a = CharField(max_length=1)
+            b = CharField(max_length=1)
+
+        class M2(Model):
+            id = MultiFieldPK("a", "b")
+            a = CharField(max_length=1)
+            b = CharField(max_length=1)
+            def __init__(self, *a, **kw):
+                return super(M2, self).__init__(*a, **kw)
+
+            def m(self):
+                return super(M2, self).__init__
+
+        print M2("a", "b").m()
+
+        self.assertIs(super(M2, M2).__init__, M1.__init__)
