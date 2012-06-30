@@ -35,5 +35,5 @@ admin.site.register(OldChapter, ChapterAdmin)
 admin.site.register(OldBiografy)
 admin.site.register(OldLibrary)
 
-
+admin.site.register(Author)
 
