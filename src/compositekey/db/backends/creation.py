@@ -51,6 +51,25 @@ def sql_create_model(self, model, style, known_models=set()):
         table_output.append(style.SQL_KEYWORD('UNIQUE') + ' (%s)' % \
             ", ".join([style.SQL_FIELD(qn(opts.get_field(f).column)) for f in field_constraints]))
 
+    if getattr(opts, "has_composite_primarykeys_field", False):
+        table_output.append(style.SQL_KEYWORD('PRIMARY KEY') + ' (%s)' %\
+                                                               ", ".join([style.SQL_FIELD(qn(f.column)) for f in opts.pk.get_key_fields()]))
+
+    #working in progress, check multiple inhetitance
+    if getattr(opts, "has_composite_foreignkeys_field", False):
+        for related in opts.composite_foreignkeys_fields:
+            field = opts.get_field(related)
+            rel = field.rel.to
+            if rel in known_models:
+                table_output.append((style.SQL_KEYWORD('FOREIGN KEY') + ' (%s) ' + style.SQL_KEYWORD('REFERENCES') + ' %s (%s)') % (\
+                    ", ".join([style.SQL_FIELD(qn(f.column)) for f in field.fields]),
+                    rel._meta.db_table,
+                    ", ".join([style.SQL_FIELD(qn(f.column)) for f in rel._meta.pk.get_key_fields()])
+                ))
+            else:
+                pending_references.setdefault(rel, []).append((model, field))
+
+
     full_statement = [style.SQL_KEYWORD('CREATE TABLE') + ' ' + style.SQL_TABLE(qn(opts.db_table)) + ' (']
     for i, line in enumerate(table_output): # Combine and add commas.
         full_statement.append('    %s%s' % (line, i < len(table_output)-1 and ',' or ''))
@@ -86,7 +105,6 @@ sql_indexes_for_model._sign = "monkey patch by compositekey"
 def sql_for_pending_references(self, model, style, pending_references):
     "Returns any ALTER TABLE statements to add constraints after the fact."
     from django.db.backends.util import truncate_name
-
     if not model._meta.managed or model._meta.proxy:
         return []
     qn = self.connection.ops.quote_name
@@ -109,8 +127,16 @@ def sql_for_pending_references(self, model, style, pending_references):
                     qn(r_col), qn(table), qn(col),
                     self.connection.ops.deferrable_sql()))
             else:
-                # todo: add constraint of multiple FK
-                pass
+                r_col = "_".join(cf.column for cf in f.fields)
+                col = "_".join(cf.column for cf in opts.pk.get_key_fields())
+                r_name = '%s_refs_%s_%s' % (r_col, col, self._digest(r_table, table))
+                final_output.append(style.SQL_KEYWORD('ALTER TABLE') + ' %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s)%s;' %\
+                                                                       (qn(r_table), qn(truncate_name(r_name, self.connection.ops.max_name_length())),
+                                                                        ", ".join([style.SQL_FIELD(qn(cf.column)) for cf in f.fields]),
+                                                                        qn(table),
+                                                                        ", ".join([style.SQL_FIELD(qn(cf.column)) for cf in opts.pk.get_key_fields()]),
+                                                                        self.connection.ops.deferrable_sql()))
+
         del pending_references[model]
     return final_output
 sql_for_pending_references._sign = "monkey patch by compositekey"

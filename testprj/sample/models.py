@@ -115,3 +115,12 @@ class Business(models.Model):
 
     def __unicode__(self):
         return self.name
+
+class Author(models.Model):
+    id = db.MultiFieldPK("name","age")
+    name = models.CharField(max_length=100)
+    age = models.IntegerField()
+    friends = models.ManyToManyField('self', blank=True)
+
+    def __unicode__(self):
+        return self.name
