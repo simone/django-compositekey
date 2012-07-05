@@ -189,4 +189,82 @@ CREATE INDEX "sample_author_name" ON "sample_author" ("name");
 CREATE INDEX "sample_author_name_like" ON "sample_author" ("name" varchar_pattern_ops);
 CREATE INDEX "sample_author_age" ON "sample_author" ("age");
 COMMIT;
+
+
+```
+EUROPYTHON 2012
+Support for Future API of CompositeField 
+from compositekey import __future__
+=====================================
+
+
+Composite PK
+------------
+```python
+from django.db import models
+from compositekey import __future__
+
+class Book(models.Model):
+    name = models.CharField(max_length=100)
+    author = models.CharField(max_length=100)
+    id = models.CompositeField(author, name, primary_key=True)
+```
+
+Inheritance
+-----------
+```python
+class BookReal(Book):
+    text = models.CharField(max_length=100)
+```
+
+Many To Many 
+------------
+```python
+class Library(models.Model):
+    name = models.CharField(max_length=100)
+    books = models.ManyToManyField(Book)
+```
+
+One To One + Composite PK related
+---------------------------------
+```python
+class Biografy(models.Model):
+    book = models.OneToOneField(Book)
+    text = models.CharField(max_length=100)
+    id = models.ComositeField(book, primary_key=True)
+```
+
+Abstract ForeignKey + field extensions syntax
+---------------------------------------------
+```python
+
+class AbstractChapter(models.Model):
+    author = models.CharField(max_length=100, db_column="b1_author", name="_author")
+    name = models.CharField(max_length=100, db_column="b1_name", name="_name")
+    book = models.ForeignKey(Book, fields=(author, name), related_name="chapter_set")
+    num = models.PositiveSmallIntegerField()
+    title = models.CharField(max_length=100)
+    id = models.CompositeField(book, num, primary_key=True)
+
+    class Meta:
+        abstract = True
+```
+
+Customize the ManyToMany Intermediate Model/Table
+-------------------------
+```python
+class Library(models.Model):
+    name = models.CharField(max_length=100)
+    books = models.ManyToManyField(Book, through="BookLibraryM2M")
+
+    def __unicode__(self):
+        return u"Library: %s" % unicode(self.name)
+
+class BookLibraryM2M(models.Model):
+    book = models.ForeignKey(Book)
+    library = models.ForeignKey(Library)
+    id = models.CompositeField(book, library, primary_key=True)
+
+    class Meta:
+        auto_created = Library
 ```
