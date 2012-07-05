@@ -192,9 +192,7 @@ COMMIT;
 
 
 ```
-EUROPYTHON 2012
-Support for Future API of CompositeField 
-from compositekey import __future__
+EUROPYTHON 2012 Support for Future API of CompositeField 
 =====================================
 
 
