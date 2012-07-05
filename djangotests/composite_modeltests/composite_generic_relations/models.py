@@ -46,6 +46,11 @@ class Comparison(models.Model):
     first_obj = generic.GenericForeignKey(ct_field="content_type1", fk_field="object_id1")
     other_obj = generic.GenericForeignKey(ct_field="content_type2", fk_field="object_id2")
 
+    class Meta:
+        ordering = ("content_type1", "object_id1", "content_type2", "object_id2")
+
+
+
     def __unicode__(self):
         return u"%s is %s than %s" % (self.first_obj, self.comparative, self.other_obj)
 

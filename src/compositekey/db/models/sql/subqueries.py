@@ -26,7 +26,7 @@ def wrap_delete_batch(original_delete_batch):
             return original_delete_batch(obj, pk_list, using, field=field)
 
         # composite PK fields
-        field_keys = field.get_key_fields()
+        field_keys = field.fields
 
         for offset in range(0, len(pk_list), GET_ITERATOR_CHUNK_SIZE):
             where = obj.where_class()

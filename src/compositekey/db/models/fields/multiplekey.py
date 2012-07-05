@@ -60,15 +60,12 @@ class MultiFieldPK(AutoField):
         cls.__init__ = patched_model_init # change the order of input
 
         def lazy_init():
-            self.fields = self.get_key_fields()
-            assert isinstance(self.fields, (list, tuple)) and len(self.fields) > 1, \
+            self.fields = self._get_key_fields()
+            assert isinstance(self.fields, (list, tuple)) and len(self.fields) > 0, \
                "%s must have a %s with at least 2 fields (%s)" % (cls.__name__, self.__class__.__name__,
                                                                   ",".join([f.name for f in self.fields]))
             names = [f.name for f in self.fields]
             cls._meta.ordering = cls._meta.ordering or names
-
-            # TODO: better add primary key = () and not unique
-            # example: PRIMARY KEY (album, disk, posn)
 
             if names not in cls._meta.unique_together:
                 cls._meta.unique_together.append(names)
@@ -87,9 +84,9 @@ class MultiFieldPK(AutoField):
         cls._meta._lazy_prepare_field_actions.append(lazy_init)
 
 
-    def get_key_fields(self):
+    def _get_key_fields(self):
         fields = []
-        for f in [self.model._meta.get_field(name) for name in self._field_names]:
+        for f in [self.model._meta.get_field(name) if not isinstance(name, Field) else name for name in self._field_names]:
             if hasattr(f, "fields"):
                 fields += [nf for nf in f.fields]
             else:

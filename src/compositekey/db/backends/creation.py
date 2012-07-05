@@ -53,7 +53,7 @@ def sql_create_model(self, model, style, known_models=set()):
 
     if getattr(opts, "has_composite_primarykeys_field", False):
         table_output.append(style.SQL_KEYWORD('PRIMARY KEY') + ' (%s)' %\
-                                                               ", ".join([style.SQL_FIELD(qn(f.column)) for f in opts.pk.get_key_fields()]))
+                                                               ", ".join([style.SQL_FIELD(qn(f.column)) for f in opts.pk.fields]))
 
     #working in progress, check multiple inhetitance
     if getattr(opts, "has_composite_foreignkeys_field", False):
@@ -64,7 +64,7 @@ def sql_create_model(self, model, style, known_models=set()):
                 table_output.append((style.SQL_KEYWORD('FOREIGN KEY') + ' (%s) ' + style.SQL_KEYWORD('REFERENCES') + ' %s (%s)') % (\
                     ", ".join([style.SQL_FIELD(qn(f.column)) for f in field.fields]),
                     rel._meta.db_table,
-                    ", ".join([style.SQL_FIELD(qn(f.column)) for f in rel._meta.pk.get_key_fields()])
+                    ", ".join([style.SQL_FIELD(qn(f.column)) for f in rel._meta.pk.fields])
                 ))
             else:
                 pending_references.setdefault(rel, []).append((model, field))
@@ -127,16 +127,18 @@ def sql_for_pending_references(self, model, style, pending_references):
                     qn(r_col), qn(table), qn(col),
                     self.connection.ops.deferrable_sql()))
             else:
-                r_col = "_".join(cf.column for cf in f.fields)
-                col = "_".join(cf.column for cf in opts.pk.get_key_fields())
-                r_name = '%s_refs_%s_%s' % (r_col, col, self._digest(r_table, table))
-                final_output.append(style.SQL_KEYWORD('ALTER TABLE') + ' %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s)%s;' %\
-                                                                       (qn(r_table), qn(truncate_name(r_name, self.connection.ops.max_name_length())),
-                                                                        ", ".join([style.SQL_FIELD(qn(cf.column)) for cf in f.fields]),
-                                                                        qn(table),
-                                                                        ", ".join([style.SQL_FIELD(qn(cf.column)) for cf in opts.pk.get_key_fields()]),
-                                                                        self.connection.ops.deferrable_sql()))
-
+                try:
+                    r_col = "_".join(cf.column for cf in f.fields)
+                    col = "_".join(cf.column for cf in opts.pk.fields)
+                    r_name = '%s_refs_%s_%s' % (r_col, col, self._digest(r_table, table))
+                    final_output.append(style.SQL_KEYWORD('ALTER TABLE') + ' %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s)%s;' %\
+                                                                           (qn(r_table), qn(truncate_name(r_name, self.connection.ops.max_name_length())),
+                                                                            ", ".join([style.SQL_FIELD(qn(cf.column)) for cf in f.fields]),
+                                                                            qn(table),
+                                                                            ", ".join([style.SQL_FIELD(qn(cf.column)) for cf in opts.pk.fields]),
+                                                                            self.connection.ops.deferrable_sql()))
+                except:
+                    print "Skip constraint: TODO", rel_class, model
         del pending_references[model]
     return final_output
 sql_for_pending_references._sign = "monkey patch by compositekey"

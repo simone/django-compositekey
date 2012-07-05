@@ -194,8 +194,8 @@ class GenericRelationsTests(TestCase):
 
         # Filtering works
         self.assertQuerysetEqual(tiger.comparisons.filter(comparative="cooler"), [
+            "<Comparison: tiger is cooler than bear>",
             "<Comparison: tiger is cooler than cheetah>",
-            "<Comparison: tiger is cooler than bear>"
         ])
 
         # Filtering and deleting works

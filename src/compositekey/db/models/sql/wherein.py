@@ -4,7 +4,7 @@ __author__ = 'aldaran'
 
 from django.conf import settings
 
-SEPARATOR = getattr(settings, "SELECT_IN_SQL_SEPARATOR",   '#')
+SEPARATOR = getattr(settings, "SELECT_IN_SQL_SEPARATOR",   '-')
 
 service = {}
 

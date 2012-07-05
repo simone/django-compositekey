@@ -24,7 +24,7 @@ def prepare_model_and_meta(sender, **kwargs):
         
         if not hasattr(sender, 'natural_key'):
             def natural_key(self):
-                return disassemble_pk(self.pk, len(self._meta.composite_primarykeys_field.get_key_fields()))
+                return disassemble_pk(self.pk, len(self._meta.composite_primarykeys_field.fields))
             
             sender.natural_key = natural_key
 
@@ -32,7 +32,7 @@ def prepare_model_and_meta(sender, **kwargs):
 
             class NaturalCompositeManager(sender._default_manager.__class__):
                 def get_by_natural_key(self, *args):
-                    names = [f.name for f in self.model._meta.composite_primarykeys_field.get_key_fields()]
+                    names = [f.name for f in self.model._meta.composite_primarykeys_field.fields]
                     return self.get(**dict(zip(names, args)))
                 
             sender._default_manager.__class__ = NaturalCompositeManager

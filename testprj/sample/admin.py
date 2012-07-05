@@ -1,3 +1,5 @@
+from django.forms.models import modelform_factory
+from django import forms
 __author__ = 'aldaran'
 
 from django.contrib import admin
@@ -36,4 +38,5 @@ admin.site.register(OldBiografy)
 admin.site.register(OldLibrary)
 
 admin.site.register(Author)
+admin.site.register(OldAuthor)
 
