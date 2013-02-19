@@ -1,6 +1,11 @@
 Django Composite Key
 ====================
 
+Allows to use Django with (legacy) databases that have composite multicolumn primary keys and multiple foreignkeys.
+
+Author
+------
+
  * Simone Federici <s.federici@gmail.com> 
 
 Links:
@@ -10,6 +15,40 @@ Links:
  * https://github.com/simone/django-compositekey/wiki
  * http://pypi.python.org/pypi/django-compositekey/
 
+Running the Test Suite
+----------------------
+
+Clone the django-compositekey repository (in case you havn't done this already):
+
+    $ git clone git://github.com/simone/django-compositekey.git
+
+Checkout the Git Submodule containing Django:
+
+    $ cd django-compositekey
+    django-compositekey$ git submodule init
+    django-compositekey$ git submodule update
+
+Update the Django clone to the version you want to test with:
+
+    django-compositekey$ cd django_src
+    django-compositekey/django_src$ git checkout 1.4.3
+    django-compositekey$ cd ..
+
+Create a new [virtualenv](http://www.virtualenv.org/) for the project and activate it.
+
+Now install `django-compositekey` inside the virtualenv:
+
+    (django-compositekey) django-compositekey$ pip install .
+
+And install Django too:
+
+    (django-compositekey) django-compositekey$ cd django_src
+    (django-compositekey) django-compositekey/django_src$ pip install .
+    (django-compositekey) django-compositekey$ cd ..
+
+Use the `Makefile` to run the composite test suite:
+
+    (django-compositekey) django-compositekey$ make test-composite
 
 Composite PK
 ------------
