@@ -38,12 +38,12 @@ Create a new [virtualenv](http://www.virtualenv.org/) for the project and activa
 
 Now install `django-compositekey` inside the virtualenv:
 
-    (django-compositekey) django-compositekey$ pip install .
+    (django-compositekey) django-compositekey$ pip install --editable .
 
 And install Django too:
 
     (django-compositekey) django-compositekey$ cd django_src
-    (django-compositekey) django-compositekey/django_src$ pip install .
+    (django-compositekey) django-compositekey/django_src$ pip install --editable .
     (django-compositekey) django-compositekey$ cd ..
 
 Use the `Makefile` to run the composite test suite:
