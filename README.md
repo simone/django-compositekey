@@ -3,6 +3,12 @@ Django Composite Key
 
 Allows to use Django with (legacy) databases that have composite multicolumn primary keys and multiple foreignkeys.
 
+
+Version 1.5 is in development
+=============================A
+For django 1.4.x compatibility checkout the 1.4.x branch=
+
+
 Author
 ------
 
