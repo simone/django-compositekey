@@ -3,3 +3,4 @@
 env.sh
 .svn
 *.log
+*.egg-info
