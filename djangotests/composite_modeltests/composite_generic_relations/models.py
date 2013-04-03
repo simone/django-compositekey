@@ -22,7 +22,7 @@ from compositekey import db
 class TaggedItem(models.Model):
     """A tag on an item."""
     tag = models.SlugField()
-    content_type = models.ForeignKey(ContentType)
+    content_type = models.ForeignKey(ContentType, related_name="ct")
     object_id = models.PositiveIntegerField()
 
     content_object = generic.GenericForeignKey()
@@ -43,10 +43,10 @@ class Comparison(models.Model):
     """
     comparative = models.CharField(max_length=50)
 
-    content_type1 = models.ForeignKey(ContentType, related_name="comparative1_set")
+    content_type1 = models.ForeignKey(ContentType, related_name="comparative11_set")
     object_id1 = models.PositiveIntegerField()
 
-    content_type2 = models.ForeignKey(ContentType,  related_name="comparative2_set")
+    content_type2 = models.ForeignKey(ContentType,  related_name="comparative22_set")
     object_id2 = models.PositiveIntegerField()
 
     first_obj = generic.GenericForeignKey(ct_field="content_type1", fk_field="object_id1")
