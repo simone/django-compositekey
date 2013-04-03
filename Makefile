@@ -13,4 +13,7 @@ help:
 	@echo "Set VERBOSITY to control the verbosity of cruntests.py (default is 1)"
 
 test-composite:
-	ls -l djangotests/composite_modeltests | grep ^d | cut -f 12 -d " " | xargs djangotests/cruntests.py --settings="$(SETTINGS)" -v$(VERBOSITY)
+	ls -1 djangotests/composite_modeltests | grep -v "\.py" | xargs djangotests/cruntests.py --settings="$(SETTINGS)" -v$(VERBOSITY)
+
+test-all-django:
+	djangotests/cruntests.py --settings="$(SETTINGS)" -v$(VERBOSITY)
