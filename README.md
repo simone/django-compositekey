@@ -7,7 +7,7 @@ Allows to use Django with (legacy) databases that have composite multicolumn pri
 Version 1.5 is in development
 =============================
 
-For django 1.4.x compatibility checkout the 1.4.x branch=
+For django 1.4.x compatibility checkout the 1.4.x branch
 
 
 Author
