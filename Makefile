@@ -6,6 +6,7 @@ VERBOSITY=1
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
 	@echo "  test-composite                    to run the composite test suite"
+	@echo "  test-all-django                   to run the complete django test suite + the composite test suite (non regression tests)"
 	@echo
 	@echo "Use SETTINGS to test with a different database (default is SQLite)."
 	@echo "Settings for different databases are in the djangotests directory."
