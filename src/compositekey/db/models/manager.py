@@ -4,7 +4,6 @@ from django.db.models.manager import Manager
 from compositekey.db.models.query import RawCompositeQuerySet
 
 __author__ = 'aldaran'
-
 __all__ = ["activate_insert_query_monkey_patch"]
 
 log = logging.getLogger(__name__)

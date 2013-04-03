@@ -68,7 +68,7 @@ def wrap_model_to_dict(original_model_to_dict):
                     data[f.name] = []
                 else:
                     # MultipleChoiceWidget needs a list of pks, not object instances.
-                    data[f.name] = [obj.pk for obj in f.value_from_object(instance)]
+                    data[f.name] = list(f.value_from_object(instance).values_list('pk', flat=True))
             else:
                 data[f.name] = f.value_from_object(instance)
         return data
@@ -114,7 +114,7 @@ def wrap_fields_for_model(original_fields_for_model):
         if fields:
             field_dict = SortedDict(
                 [(f, field_dict.get(f)) for f in fields
-                    if ((not exclude) or (exclude and f not in exclude)) and (f not in ignored)]
+                 if ((not exclude) or (exclude and f not in exclude)) and (f not in ignored)]
             )
         return field_dict
 

@@ -18,7 +18,7 @@ def sql_delete(app, style, connection):
 
     # Figure out which tables already exist
     if cursor:
-        table_names = connection.introspection.get_table_list(cursor)
+        table_names = connection.introspection.table_names(cursor)
     else:
         table_names = []
 
@@ -35,7 +35,7 @@ def sql_delete(app, style, connection):
             opts = model._meta
             for f in [f for f in opts.local_fields if not getattr(f, "not_in_db", False)]:
                 if f.rel and f.rel.to not in to_delete:
-                    references_to_delete.setdefault(f.rel.to, []).append( (model, f) )
+                    references_to_delete.setdefault(f.rel.to, []).append((model, f))
 
             to_delete.add(model)
 

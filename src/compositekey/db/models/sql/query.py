@@ -2,8 +2,8 @@ __author__ = 'aldaran'
 
 import logging
 
+from django.db.models.constants import LOOKUP_SEP
 from django.core.exceptions import FieldError
-from django.db.models.sql.constants import LHS_JOIN_COL, RHS_JOIN_COL, LOOKUP_SEP, LHS_ALIAS
 from django.db.models.sql.datastructures import MultiJoin
 from django.db.models.sql.query import Query
 
@@ -28,23 +28,27 @@ def add_fields(self, field_names, allow_m2m=True):
             for col in cols:
                 if len(joins) > 1:
                     join = self.alias_map[final_alias]
-                    if col == join[RHS_JOIN_COL]:
+                    if col == join.rhs_join_col:
                         self.unref_alias(final_alias)
-                        final_alias = join[LHS_ALIAS]
-                        col = join[LHS_JOIN_COL]
+                        final_alias = join.lhs_alias
+                        col = join.lhs_join_col
                         joins = joins[:-1]
-                self.promote_alias_chain(joins[1:])
+                self.promote_joins(joins[1:])
                 self.select.append((final_alias, col))
                 self.select_fields.append(field)
     except MultiJoin:
         raise FieldError("Invalid field name: '%s'" % name)
     except FieldError:
-        names = opts.get_all_field_names() + self.extra.keys() + self.aggregate_select.keys()
-        names.sort()
-        raise FieldError("Cannot resolve keyword %r into field. "
-                "Choices are: %s" % (name, ", ".join(names)))
+        if LOOKUP_SEP in name:
+            # For lookups spanning over relationships, show the error
+            # from the model on which the lookup failed.
+            raise
+        else:
+            names = sorted(opts.get_all_field_names() + list(self.extra)
+                           + list(self.aggregate_select))
+            raise FieldError("Cannot resolve keyword %r into field. "
+                    "Choices are: %s" % (name, ", ".join(names)))
     self.remove_inherited_models()
-
 add_fields._sign = "monkey patch by compositekey"
 
 

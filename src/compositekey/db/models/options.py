@@ -6,11 +6,11 @@ __author__ = 'aldaran'
 from django.db.models.loading import app_cache_ready
 from django.db.models.options import Options
 
+log = logging.getLogger(__name__)
+
 def get_fields_with_model(self):
     return [(field, model) for field, model in self._get_fields_with_model() if not getattr(field, "not_in_db", False)]
 get_fields_with_model._sign = "activate_get_fields_with_model_monkey_patch"
-
-log = logging.getLogger(__name__)
 
 def init_name_map(self):
     """

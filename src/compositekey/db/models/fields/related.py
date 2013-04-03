@@ -42,7 +42,7 @@ def wrap_fk_monkey_patch(ori_init, ori_contribute_to_class):
             # STR check if is a lazy relationship
             def lazy_init():
 
-                if not isinstance(self.rel.to, str) and getattr(self.rel.to._meta, "has_composite_primarykeys_field", False):
+                if not isinstance(self.rel.to, (unicode, str)) and getattr(self.rel.to._meta, "has_composite_primarykeys_field", False):
                     related_field = self.rel.to._meta.composite_primarykeys_field
                     opts.enable_composite = True
                     opts.has_composite_foreignkeys_field = True

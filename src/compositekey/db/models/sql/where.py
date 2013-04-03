@@ -1,4 +1,5 @@
 import logging
+from django.db.models.sql.aggregates import Aggregate
 
 from django.db.models.fields import Field
 from django.db.models.sql.where import EmptyShortCircuit, EmptyResultSet, WhereNode, Constraint
@@ -15,14 +16,16 @@ def wrap_make_atom(original_make_atom):
         it.
         """
         _lvalue, _lookup_type, _value_annot, _params_or_value = child
-        if hasattr(_lvalue, 'process'):
+        if isinstance(_lvalue, Constraint):
             try:
                 _lvalue, _params = _lvalue.process(_lookup_type, _params_or_value, connection)
             except EmptyShortCircuit:
                 raise EmptyResultSet
+        elif isinstance(_lvalue, Aggregate):
+            _params = _lvalue.field.get_db_prep_lookup(_lookup_type, _params_or_value, connection)
         else:
-            _params = Field().get_db_prep_lookup(_lookup_type, _params_or_value,
-                connection=connection, prepared=True)
+            raise TypeError("'make_atom' expects a Constraint or an Aggregate "
+                            "as the first item of its 'child' argument.")
 
         if isinstance(_lvalue, tuple):
             # A direct database column lookup.

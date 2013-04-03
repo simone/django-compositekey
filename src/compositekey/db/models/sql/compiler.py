@@ -1,9 +1,8 @@
-from itertools import izip
 import logging
 
-from django.core.exceptions import FieldError
-from django.db.models.sql.constants import LHS_JOIN_COL, LHS_ALIAS, RHS_JOIN_COL, TABLE_NAME, JOIN_TYPE, LOOKUP_SEP, MULTI
-from django.db.models.sql.query import get_order_dir, Query
+from django.db.models.sql.constants import MULTI
+from django.db.models.sql.query import Query
+
 from compositekey.db.models.sql.wherein import MultipleColumnsIN
 from compositekey.utils import assemble_pk
 
@@ -25,8 +24,8 @@ def wrap_get_from_clause(original_get_from_clause):
         from-clause via a "select".
 
         This should only be called after any SQL construction methods that
-        might change the tables we need. This means the select columns and
-        ordering must be done first.
+        might change the tables we need. This means the select columns,
+        ordering and distinct must be done first.
         """
         result = []
         qn = self.quote_name_unless_alias
@@ -76,19 +75,22 @@ def wrap_get_from_clause(original_get_from_clause):
     get_from_clause._sign = "monkey patch by compositekey"
     return get_from_clause
 
-def find_ordering_name(self, name, opts, alias=None, default_order='ASC',
-        already_seen=None):
+def _setup_joins(self, pieces, opts, alias):
     """
-    Returns the table alias (the name might be ambiguous, the alias will
-    not be) and column name for ordering by the given 'name' parameter.
-    The 'name' is of the form 'field1__field2__...__fieldN'.
+    A helper method for get_ordering and get_distinct. This method will
+    call query.setup_joins, handle refcounts and then promote the joins.
+
+    Note that get_ordering and get_distinct must produce same target
+    columns on same input, as the prefixes of get_ordering and get_distinct
+    must match. Executing SQL where this is not true is an error.
     """
-    name, order = get_order_dir(name, default_order)
-    pieces = name.split(LOOKUP_SEP)
     if not alias:
         alias = self.query.get_initial_alias()
-    field, target, opts, joins, last, extra = self.query.setup_joins(pieces,
-            opts, alias, False)
+    field, target, opts, joins, _, _ = self.query.setup_joins(pieces,
+        opts, alias, False)
+    # We will later on need to promote those joins that were added to the
+    # query afresh above.
+    joins_to_promote = [j for j in joins if self.query.alias_refcount[j] < 2]
     alias = joins[-1]
     col = getattr(target.column, "columns", [target.column])[0] # todo: ordering using only the first column in multicolumns
     if not field.rel:
@@ -98,38 +100,10 @@ def find_ordering_name(self, name, opts, alias=None, default_order='ASC',
         self.query.ref_alias(alias)
 
     # Must use left outer joins for nullable fields and their relations.
-    self.query.promote_alias_chain(joins,
-        self.query.alias_map[joins[0]][JOIN_TYPE] == self.query.LOUTER)
-
-    # If we get to this point and the field is a relation to another model,
-    # append the default ordering for that model.
-    if field.rel and len(joins) > 1 and opts.ordering:
-        # Firstly, avoid infinite loops.
-        if not already_seen:
-            already_seen = set()
-        join_tuple = tuple([self.query.alias_map[j][TABLE_NAME] for j in joins])
-        if join_tuple in already_seen:
-            raise FieldError('Infinite loop caused by ordering.')
-        already_seen.add(join_tuple)
-
-        results = []
-        for item in opts.ordering:
-            results.extend(self.find_ordering_name(item, opts, alias,
-                    order, already_seen))
-        return results
-
-    if alias:
-        # We have to do the same "final join" optimisation as in
-        # add_filter, since the final column might not otherwise be part of
-        # the select set (so we can't order on it).
-        while 1:
-            join = self.query.alias_map[alias]
-            if col != join[RHS_JOIN_COL]:
-                break
-            self.query.unref_alias(alias)
-            alias = join[LHS_ALIAS]
-            col = join[LHS_JOIN_COL]
-    return [(alias, col, order)]
+    # Ordering or distinct must not affect the returned set, and INNER
+    # JOINS for nullable fields could do this.
+    self.query.promote_joins(joins_to_promote)
+    return field, col, alias, joins, opts
 
 
 def pre_sql_setup(self):
@@ -156,6 +130,12 @@ def pre_sql_setup(self):
     query.extra = {}
     query.select = []
     query.add_fields([query.model._meta.pk.name])
+    # Recheck the count - it is possible that fiddling with the select
+    # fields above removes tables from the query. Refs #18304.
+    count = query.count_active_tables()
+    if not self.query.related_updates and count == 1:
+        return
+
     must_pre_select = count > 1 and not self.connection.features.update_can_self_select
 
     # Now we adjust the current query: reset the where clause and get rid
@@ -211,19 +191,24 @@ def as_sql(self):
         placeholders = [["%s"] * len(fields)]
     else:
         placeholders = [
-        [self.placeholder(field, v) for field, v in izip(fields, val)]
+        [self.placeholder(field, v) for field, v in zip(fields, val)]
         for val in values
         ]
+        # Oracle Spatial needs to remove some values due to #10888
+        params = self.connection.ops.modify_insert_params(placeholders, params)
     if self.return_id and self.connection.features.can_return_id_from_insert:
         params = params[0]
-        result.append("VALUES (%s)" % ", ".join(placeholders[0]))
-        r_fmt, r_params = self.connection.ops.return_insert_id()
         if not hasattr(opts.pk.column, "columns"):
             col = "%s.%s" % (qn(opts.db_table), qn(opts.pk.column))
         else:
             col = 1
-        result.append(r_fmt % col)
-        params += r_params
+        result.append("VALUES (%s)" % ", ".join(placeholders[0]))
+        r_fmt, r_params = self.connection.ops.return_insert_id()
+        # Skip empty r_fmt to allow subclasses to customize behaviour for
+        # 3rd party backends. Refs #19096.
+        if r_fmt:
+            result.append(r_fmt % col)
+            params += r_params
         return [(" ".join(result), tuple(params))]
     if can_bulk:
         result.append(self.connection.ops.bulk_insert_sql(fields, len(values)))
@@ -231,7 +216,7 @@ def as_sql(self):
     else:
         return [
             (" ".join(result + ["VALUES (%s)" % ", ".join(p)]), vals)
-            for p, vals in izip(placeholders, params)
+            for p, vals in zip(placeholders, params)
         ]
 
 
@@ -241,6 +226,6 @@ def activate_get_from_clause_monkey_patch():
     if not hasattr(SQLCompiler.get_from_clause, "_sign"):
         log.debug("activate_get_from_clause_monkey_patch")
         SQLCompiler.get_from_clause = wrap_get_from_clause(SQLCompiler.get_from_clause)
-        SQLCompiler.find_ordering_name = find_ordering_name
+        SQLCompiler._setup_joins = _setup_joins
         SQLUpdateCompiler.pre_sql_setup = pre_sql_setup
         SQLInsertCompiler.as_sql = as_sql

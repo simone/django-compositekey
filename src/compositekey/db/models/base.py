@@ -29,15 +29,15 @@ def patched_model_init(self, *args, **kwargs):
 
     fields_iter = iter(self._meta.db_fields)
     if not kwargs:
-        # The ordering of the izip calls matter - izip throws StopIteration
+        # The ordering of the zip calls matter - zip throws StopIteration
         # when an iter throws it. So if the first iter throws it, the second
         # is *not* consumed. We rely on this, so don't change the order
         # without changing the logic.
-        for val, field in izip(args, fields_iter):
+        for val, field in zip(args, fields_iter):
             setattr(self, field.attname, val)
     else:
         # Slower, kwargs-ready version.
-        for val, field in izip(args, fields_iter):
+        for val, field in zip(args, fields_iter):
             setattr(self, field.attname, val)
             kwargs.pop(field.name, None)
             # Maintain compatibility with existing calls.
@@ -94,14 +94,14 @@ def patched_model_init(self, *args, **kwargs):
             setattr(self, field.attname, val)
 
     if kwargs:
-        for prop in kwargs.keys():
+        for prop in list(kwargs):
             try:
                 if hasattr(getattr(self.__class__, prop), "__set__"):
                     setattr(self, prop, kwargs.pop(prop))
             except AttributeError:
                 pass
         if kwargs:
-            raise TypeError("'%s' is an invalid keyword argument for this function" % kwargs.keys()[0])
+            raise TypeError("'%s' is an invalid keyword argument for this function" % list(kwargs)[0])
     super(Model, self).__init__()
 
     # setup pk cache

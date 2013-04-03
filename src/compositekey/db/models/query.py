@@ -3,6 +3,7 @@ from django.db import connections
 
 from django.db.models.query import get_cached_row, get_klass_info, RawQuerySet
 from django.db.models.query_utils import InvalidQuery
+from django.utils import six
 from compositekey.db.models.query_utils import new_deferred_class_factory as deferred_class_factory
 from compositekey.utils import *
 
@@ -59,14 +60,14 @@ class RawCompositeQuerySet(RawQuerySet):
                     model_init_field_pos.append(model_init_field_names[field.attname])
         if need_resolv_columns:
             fields = [self.model_fields.get(c, None) for c in self.columns]
-            # Begin looping through the query values.
+        # Begin looping through the query values.
         for values in query:
             if need_resolv_columns:
                 values = compiler.resolve_columns(values, fields)
-                # Associate fields to values
+            # Associate fields to values
             if skip:
                 model_init_kwargs = {}
-                for attname, pos in model_init_field_names.iteritems():
+                for attname, pos in six.iteritems(model_init_field_names):
                     model_init_kwargs[attname] = values[pos]
                 instance = model_cls(**model_init_kwargs)
             else:
@@ -88,15 +89,17 @@ def iterator(self):
     An iterator over the results from applying this QuerySet to the
     database.
     """
-    fill_cache = self.query.select_related
+    fill_cache = False
+    if connections[self.db].features.supports_select_related:
+        fill_cache = self.query.select_related
     if isinstance(fill_cache, dict):
         requested = fill_cache
     else:
         requested = None
     max_depth = self.query.max_depth
 
-    extra_select = self.query.extra_select.keys()
-    aggregate_select = self.query.aggregate_select.keys()
+    extra_select = list(self.query.extra_select)
+    aggregate_select = list(self.query.aggregate_select)
 
     only_load = self.query.get_loaded_field_names()
     if not fill_cache:
@@ -146,12 +149,12 @@ def iterator(self):
             obj, _ = get_cached_row(row, index_start, db, klass_info,
                                     offset=len(aggregate_select))
         else:
+            # Omit aggregates in object creation.
+            row_data = row[index_start:aggregate_start]
             if skip:
-                row_data = row[index_start:aggregate_start]
                 obj = model_cls(**dict(zip(init_list, row_data)))
             else:
-                # Omit aggregates in object creation.
-                obj = model(*row[index_start:aggregate_start])
+                obj = model(*row_data)
 
             # Store the source database of the object
             obj._state.db = db
@@ -165,17 +168,28 @@ def iterator(self):
         # Add the aggregates to the model
         if aggregate_select:
             for i, aggregate in enumerate(aggregate_select):
-                setattr(obj, aggregate, row[i+aggregate_start])
+                setattr(obj, aggregate, row[i + aggregate_start])
+
+            # Add the known related objects to the model, if there are any
+            if self._known_related_objects:
+                for field, rel_objs in self._known_related_objects.items():
+                    pk = getattr(obj, field.get_attname())
+                    try:
+                        rel_obj = rel_objs[pk]
+                    except KeyError:
+                        pass               # may happen in qs1 | qs2 scenarios
+                    else:
+                        setattr(obj, field.name, rel_obj)
 
         yield obj
 iterator._sign = "monkey patch by compositekey"
 
 def v_iterator(self):
     # Purge any extra columns that haven't been explicitly asked for
-    extra_names = self.query.extra_select.keys()
+    extra_names = list(self.query.extra_select)
     nodb_names = getattr(self.model._meta, "nodb_names", [])
     field_names = [name for name in self.field_names if name.split("__")[0] not in nodb_names]
-    aggregate_names = self.query.aggregate_select.keys()
+    aggregate_names = list(self.query.aggregate_select)
 
     names = extra_names + field_names + aggregate_names
 
@@ -193,17 +207,17 @@ def vl_iterator(self):
         # When extra(select=...) or an annotation is involved, the extra
         # cols are always at the start of the row, and we need to reorder
         # the fields to match the order in self._fields.
-        extra_names = self.query.extra_select.keys()
-        aggregate_names = self.query.aggregate_select.keys()
+        extra_names = list(self.query.extra_select)
         nodb_names = getattr(self.model._meta, "nodb_names", [])
         field_names = [f for f in self.field_names if f not in nodb_names]
+        aggregate_names = list(self.query.aggregate_select)
 
         names = extra_names + field_names + aggregate_names
 
         # If a field list has been specified, use it. Otherwise, use the
         # full list of fields, including extras and aggregates.
         if self._fields:
-            fields = [f for f in list(self._fields) + filter(lambda f: f not in self._fields, aggregate_names) if f not in nodb_names]
+            fields = [x for x in list(self._fields) + [f for f in aggregate_names if f not in self._fields] if x not in nodb_names]
         else:
             fields = names
 
@@ -212,7 +226,6 @@ def vl_iterator(self):
             yield tuple([data[f] for f in fields])
 
 def wrap_update(original):
-
     def _update(self, _values):
         assert self.query.can_filter(), \
                 "Cannot update a query once a slice has been taken."
@@ -225,6 +238,7 @@ def wrap_update(original):
                     values[f.name] = (f, model, v)
         return original(self, values.values())
     return _update
+    _update.alters_data = True
 
 def activate_iterator_monkey_patch():
     from django.db.models.query import QuerySet, ValuesQuerySet, ValuesListQuerySet
