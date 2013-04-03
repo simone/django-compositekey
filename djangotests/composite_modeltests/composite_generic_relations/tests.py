@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 from django import forms
 from django.contrib.contenttypes.generic import generic_inlineformset_factory
@@ -12,6 +12,7 @@ from .models import (TaggedItem, ValuableTaggedItem, Comparison, Animal,
     Vegetable, Mineral, Gecko)
 
 class GenericRelationsTests(TestCase):
+
 
     # fails #7 Wrong JOIN between a multiple column with object_id
     @unittest.expectedFailure
@@ -80,22 +81,28 @@ class GenericRelationsTests(TestCase):
             "<Animal: Lion>",
             "<Animal: Platypus>"
         ])
+        self.assertQuerysetEqual(Animal.objects.filter(tags__tag='fatty'), [
+            "<Animal: Platypus>"
+        ])
+        self.assertQuerysetEqual(Animal.objects.exclude(tags__tag='fatty'), [
+            "<Animal: Lion>"
+        ])
 
         # If you delete an object with an explicit Generic relation, the related
         # objects are deleted when the source object is deleted.
         # Original list of tags:
         comp_func = lambda obj: (
-            obj.tag, obj.content_type.model_class(), int(obj.object_id) if re.match(r'\d+', obj.object_id) else obj.object_id
+            obj.tag, obj.content_type.model_class(), obj.object_id
         )
 
         self.assertQuerysetEqual(TaggedItem.objects.all(), [
-                (u'clearish', Mineral, quartz.pk),
-                (u'fatty', Animal, platypus.pk),
-                (u'fatty', Vegetable, bacon.pk),
-                (u'hairy', Animal, lion.pk),
-                (u'salty', Vegetable, bacon.pk),
-                (u'shiny', Animal, platypus.pk),
-                (u'yellow', Animal, lion.pk)
+                ('clearish', Mineral, quartz.pk),
+                ('fatty', Animal, platypus.pk),
+                ('fatty', Vegetable, bacon.pk),
+                ('hairy', Animal, lion.pk),
+                ('salty', Vegetable, bacon.pk),
+                ('shiny', Animal, platypus.pk),
+                ('yellow', Animal, lion.pk)
             ],
             comp_func
         )
@@ -105,11 +112,11 @@ class GenericRelationsTests(TestCase):
         with show_sql:
             lion.delete()
         self.assertQuerysetEqual(TaggedItem.objects.all(), [
-                (u'clearish', Mineral, quartz.pk),
-                (u'fatty', Animal, platypus.pk),
-                (u'fatty', Vegetable, bacon.pk),
-                (u'salty', Vegetable, bacon.pk),
-                (u'shiny', Animal, platypus.pk)
+                ('clearish', Mineral, quartz.pk),
+                ('fatty', Animal, platypus.pk),
+                ('fatty', Vegetable, bacon.pk),
+                ('salty', Vegetable, bacon.pk),
+                ('shiny', Animal, platypus.pk)
             ],
             comp_func
         )
@@ -119,11 +126,11 @@ class GenericRelationsTests(TestCase):
         quartz_pk = quartz.pk
         quartz.delete()
         self.assertQuerysetEqual(TaggedItem.objects.all(), [
-                (u'clearish', Mineral, quartz_pk),
-                (u'fatty', Animal, platypus.pk),
-                (u'fatty', Vegetable, bacon.pk),
-                (u'salty', Vegetable, bacon.pk),
-                (u'shiny', Animal, platypus.pk)
+                ('clearish', Mineral, quartz_pk),
+                ('fatty', Animal, platypus.pk),
+                ('fatty', Vegetable, bacon.pk),
+                ('salty', Vegetable, bacon.pk),
+                ('shiny', Animal, platypus.pk)
             ],
             comp_func
         )
@@ -133,10 +140,10 @@ class GenericRelationsTests(TestCase):
         tag.delete()
         self.assertQuerysetEqual(bacon.tags.all(), ["<TaggedItem: salty>"])
         self.assertQuerysetEqual(TaggedItem.objects.all(), [
-                (u'clearish', Mineral, quartz_pk),
-                (u'fatty', Animal, platypus.pk),
-                (u'salty', Vegetable, bacon.pk),
-                (u'shiny', Animal, platypus.pk)
+                ('clearish', Mineral, quartz_pk),
+                ('fatty', Animal, platypus.pk),
+                ('salty', Vegetable, bacon.pk),
+                ('shiny', Animal, platypus.pk)
             ],
             comp_func
         )
@@ -194,8 +201,8 @@ class GenericRelationsTests(TestCase):
 
         # Filtering works
         self.assertQuerysetEqual(tiger.comparisons.filter(comparative="cooler"), [
-            "<Comparison: tiger is cooler than bear>",
             "<Comparison: tiger is cooler than cheetah>",
+            "<Comparison: tiger is cooler than bear>"
         ])
 
         # Filtering and deleting works
@@ -230,11 +237,11 @@ class GenericRelationsTests(TestCase):
     def test_generic_inline_formsets(self):
         GenericFormSet = generic_inlineformset_factory(TaggedItem, extra=1)
         formset = GenericFormSet()
-        self.assertEqual(u''.join(form.as_p() for form in formset.forms), u"""<p><label for="id_composite_generic_relations-taggeditem-content_type-object_id-0-tag">Tag:</label> <input id="id_composite_generic_relations-taggeditem-content_type-object_id-0-tag" type="text" name="composite_generic_relations-taggeditem-content_type-object_id-0-tag" maxlength="50" /></p>
+        self.assertHTMLEqual(''.join(form.as_p() for form in formset.forms), """<p><label for="id_generic_relations-taggeditem-content_type-object_id-0-tag">Tag:</label> <input id="id_generic_relations-taggeditem-content_type-object_id-0-tag" type="text" name="generic_relations-taggeditem-content_type-object_id-0-tag" maxlength="50" /></p>
 <p><label for="id_composite_generic_relations-taggeditem-content_type-object_id-0-DELETE">Delete:</label> <input type="checkbox" name="composite_generic_relations-taggeditem-content_type-object_id-0-DELETE" id="id_composite_generic_relations-taggeditem-content_type-object_id-0-DELETE" /><input type="hidden" name="composite_generic_relations-taggeditem-content_type-object_id-0-id" id="id_composite_generic_relations-taggeditem-content_type-object_id-0-id" /></p>""")
 
         formset = GenericFormSet(instance=Animal())
-        self.assertEqual(u''.join(form.as_p() for form in formset.forms), u"""<p><label for="id_composite_generic_relations-taggeditem-content_type-object_id-0-tag">Tag:</label> <input id="id_composite_generic_relations-taggeditem-content_type-object_id-0-tag" type="text" name="composite_generic_relations-taggeditem-content_type-object_id-0-tag" maxlength="50" /></p>
+        self.assertHTMLEqual(''.join(form.as_p() for form in formset.forms), """<p><label for="id_composite_generic_relations-taggeditem-content_type-object_id-0-tag">Tag:</label> <input id="id_composite_generic_relations-taggeditem-content_type-object_id-0-tag" type="text" name="composite_generic_relations-taggeditem-content_type-object_id-0-tag" maxlength="50" /></p>
 <p><label for="id_composite_generic_relations-taggeditem-content_type-object_id-0-DELETE">Delete:</label> <input type="checkbox" name="composite_generic_relations-taggeditem-content_type-object_id-0-DELETE" id="id_composite_generic_relations-taggeditem-content_type-object_id-0-DELETE" /><input type="hidden" name="composite_generic_relations-taggeditem-content_type-object_id-0-id" id="id_composite_generic_relations-taggeditem-content_type-object_id-0-id" /></p>""")
 
         platypus = Animal.objects.create(
@@ -246,13 +253,13 @@ class GenericRelationsTests(TestCase):
         tagged_item_id = TaggedItem.objects.get(
             tag='shiny', object_id=platypus.id
         ).id
-        self.assertEqual(u''.join(form.as_p() for form in formset.forms), u"""<p><label for="id_composite_generic_relations-taggeditem-content_type-object_id-0-tag">Tag:</label> <input id="id_composite_generic_relations-taggeditem-content_type-object_id-0-tag" type="text" name="composite_generic_relations-taggeditem-content_type-object_id-0-tag" value="shiny" maxlength="50" /></p>
+        self.assertHTMLEqual(''.join(form.as_p() for form in formset.forms), """<p><label for="id_composite_generic_relations-taggeditem-content_type-object_id-0-tag">Tag:</label> <input id="id_composite_generic_relations-taggeditem-content_type-object_id-0-tag" type="text" name="composite_generic_relations-taggeditem-content_type-object_id-0-tag" value="shiny" maxlength="50" /></p>
 <p><label for="id_composite_generic_relations-taggeditem-content_type-object_id-0-DELETE">Delete:</label> <input type="checkbox" name="composite_generic_relations-taggeditem-content_type-object_id-0-DELETE" id="id_composite_generic_relations-taggeditem-content_type-object_id-0-DELETE" /><input type="hidden" name="composite_generic_relations-taggeditem-content_type-object_id-0-id" value="%s" id="id_composite_generic_relations-taggeditem-content_type-object_id-0-id" /></p><p><label for="id_composite_generic_relations-taggeditem-content_type-object_id-1-tag">Tag:</label> <input id="id_composite_generic_relations-taggeditem-content_type-object_id-1-tag" type="text" name="composite_generic_relations-taggeditem-content_type-object_id-1-tag" maxlength="50" /></p>
 <p><label for="id_composite_generic_relations-taggeditem-content_type-object_id-1-DELETE">Delete:</label> <input type="checkbox" name="composite_generic_relations-taggeditem-content_type-object_id-1-DELETE" id="id_composite_generic_relations-taggeditem-content_type-object_id-1-DELETE" /><input type="hidden" name="composite_generic_relations-taggeditem-content_type-object_id-1-id" id="id_composite_generic_relations-taggeditem-content_type-object_id-1-id" /></p>""" % tagged_item_id)
 
         lion = Animal.objects.create(common_name="Lion", latin_name="Panthera leo")
         formset = GenericFormSet(instance=lion, prefix='x')
-        self.assertEqual(u''.join(form.as_p() for form in formset.forms), u"""<p><label for="id_x-0-tag">Tag:</label> <input id="id_x-0-tag" type="text" name="x-0-tag" maxlength="50" /></p>
+        self.assertHTMLEqual(''.join(form.as_p() for form in formset.forms), """<p><label for="id_x-0-tag">Tag:</label> <input id="id_x-0-tag" type="text" name="x-0-tag" maxlength="50" /></p>
 <p><label for="id_x-0-DELETE">Delete:</label> <input type="checkbox" name="x-0-DELETE" id="id_x-0-DELETE" /><input type="hidden" name="x-0-id" id="id_x-0-id" /></p>""")
 
     def test_gfk_manager(self):
@@ -261,7 +268,7 @@ class GenericRelationsTests(TestCase):
         tag = TaggedItem.objects.create(content_object=tailless, tag="lizard")
         self.assertEqual(tag.content_object, tailless)
 
-class CustomWidget(forms.CharField):
+class CustomWidget(forms.TextInput):
     pass
 
 class TaggedItemForm(forms.ModelForm):

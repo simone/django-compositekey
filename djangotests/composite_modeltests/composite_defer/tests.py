@@ -1,9 +1,10 @@
 from __future__ import absolute_import
+from compositekey.tests import ShowSQL
 
-from django.db.models.query_utils import DeferredAttribute
+from django.db.models.query_utils import DeferredAttribute, InvalidQuery
 from django.test import TestCase
 
-from .models import Secondary, Primary, Child, BigChild
+from .models import Secondary, Primary, Child, BigChild, ChildProxy
 
 
 class DeferTests(TestCase):
@@ -25,31 +26,30 @@ class DeferTests(TestCase):
         p1 = Primary.objects.create(name="p1", value="xx", related=s1)
 
         qs = Primary.objects.all()
-        self.assert_delayed(qs.defer("name")[0], 0)
-        self.assert_delayed(qs.defer("value")[0], 1)
-        self.assert_delayed(qs.only("name")[0], 1)
-        self.assert_delayed(qs.only("value")[0], 0)
+
+        self.assert_delayed(qs.defer("name")[0], 1)
+        self.assert_delayed(qs.only("name")[0], 2)
         self.assert_delayed(qs.defer("related__first")[0], 0)
 
         # Using 'pk' with only() should result in 3 deferred fields, namely all
         # of them except the model's primary key see #15494
-        self.assert_delayed(qs.only("pk")[0], 1)
+        self.assert_delayed(qs.only("pk")[0], 3)
 
         obj = qs.select_related().only("related__first")[0]
-        self.assert_delayed(obj, 1)
+        self.assert_delayed(obj, 2)
 
         self.assertEqual(obj.related_id, s1.pk)
 
         # You can use 'pk' with reverse foreign key lookups.
-        self.assert_delayed(s1.primary_set.all().only('pk')[0], 1)
+        self.assert_delayed(s1.primary_set.all().only('pk')[0], 3)
 
-        self.assert_delayed(qs.defer("value").extra(select={"a": 1})[0], 1)
-        self.assert_delayed(qs.extra(select={"a": 1}).defer("value")[0], 1)
-        self.assert_delayed(qs.defer("name").defer("value")[0], 1)
-        self.assert_delayed(qs.only("name").only("value")[0], 0)
-        self.assert_delayed(qs.only("name").defer("value")[0], 1)
-        self.assert_delayed(qs.only("name", "value").defer("value")[0], 1)
-        self.assert_delayed(qs.defer("name").only("value")[0], 0)
+        self.assert_delayed(qs.defer("name").extra(select={"a": 1})[0], 1)
+        self.assert_delayed(qs.extra(select={"a": 1}).defer("name")[0], 1)
+        self.assert_delayed(qs.defer("name").defer("value")[0], 2)
+        self.assert_delayed(qs.only("name").only("value")[0], 2)
+        self.assert_delayed(qs.only("name").defer("value")[0], 2)
+        self.assert_delayed(qs.only("name", "value").defer("value")[0], 2)
+        self.assert_delayed(qs.defer("name").only("value")[0], 2)
 
         obj = qs.only()[0]
         self.assert_delayed(qs.defer(None)[0], 0)
@@ -57,26 +57,36 @@ class DeferTests(TestCase):
 
         # User values() won't defer anything (you get the full list of
         # dictionaries back), but it still works.
-        self.assertEqual(qs.defer("value").values()[0], {
-            'name': u'p1',
-            'related_second': u'y1',
-            'related_first': u'x1',
-            'value': u'xx'
-        })
+        self.assertEqual(qs.defer("name").values()[0], {
+            "id": p1.id,
+            "name": "p1",
+            "value": "xx",
+            "related_id": s1.id,
+            })
         self.assertEqual(qs.only("name").values()[0], {
-            'name': u'p1',
-            'related_second': u'y1',
-            'related_first': u'x1',
-            'value': u'xx'
-        })
+            "id": p1.id,
+            "name": "p1",
+            "value": "xx",
+            "related_id": s1.id,
+            })
 
         # Using defer() and only() with get() is also valid.
-        self.assert_delayed(qs.defer("name").get(pk=p1.pk), 0)
-        self.assert_delayed(qs.only("name").get(pk=p1.pk), 1)
+        self.assert_delayed(qs.defer("name").get(pk=p1.pk), 1)
+        self.assert_delayed(qs.only("name").get(pk=p1.pk), 2)
 
-        # DOES THIS WORK?
-        self.assert_delayed(qs.only("name").select_related("related")[0], 1)
-        self.assert_delayed(qs.defer("related").select_related("related")[0], 0)
+        # When we defer a field and also select_related it, the query is
+        # invalid and raises an exception.
+        with self.assertRaises(InvalidQuery):
+            qs.only("name").select_related("related")[0]
+        with self.assertRaises(InvalidQuery):
+            qs.defer("related").select_related("related")[0]
+
+        # With a depth-based select_related, all deferred ForeignKeys are
+        # deferred instead of traversed.
+        with self.assertNumQueries(3):
+            obj = qs.defer("related").select_related()[0]
+            self.assert_delayed(obj, 1)
+            self.assertEqual(obj.related.id, s1.pk)
 
         # Saving models with deferred fields is possible (but inefficient,
         # since every field has to be retrieved first).
@@ -86,7 +96,7 @@ class DeferTests(TestCase):
         self.assertQuerysetEqual(
             Primary.objects.all(), [
                 "a new name",
-            ],
+                ],
             lambda p: p.name
         )
 
@@ -146,3 +156,59 @@ class DeferTests(TestCase):
         obj.name = "bb"
         obj.save()
 
+    def test_defer_proxy(self):
+        """
+        Ensure select_related together with only on a proxy model behaves
+        as expected. See #17876.
+        """
+        related = Secondary.objects.create(first='x1', second='x2')
+        ChildProxy.objects.create(name='p1', value='xx', related=related)
+        children = ChildProxy.objects.all().select_related().only('id', 'name')
+        self.assertEqual(len(children), 1)
+        child = children[0]
+        self.assert_delayed(child, 2)
+        self.assertEqual(child.name, 'p1')
+        self.assertEqual(child.value, 'xx')
+
+    def test_defer_inheritance_pk_chaining(self):
+        """
+        When an inherited model is fetched from the DB, its PK is also fetched.
+        When getting the PK of the parent model it is useful to use the already
+        fetched parent model PK if it happens to be available. Tests that this
+        is done.
+        """
+        s1 = Secondary.objects.create(first="x1", second="y1")
+        bc = BigChild.objects.create(name="b1", value="foo", related=s1,
+            other="bar")
+        bc_deferred = BigChild.objects.only('name').get(pk=bc.pk)
+        with self.assertNumQueries(0):
+            bc_deferred.id
+        self.assertEqual(bc_deferred.pk, bc_deferred.id)
+    def test_defer_proxy(self):
+        """
+        Ensure select_related together with only on a proxy model behaves
+        as expected. See #17876.
+        """
+        related = Secondary.objects.create(first='x1', second='x2')
+        ChildProxy.objects.create(name='p1', value='xx', related=related)
+        children = ChildProxy.objects.all().select_related().only('id', 'name')
+        self.assertEqual(len(children), 1)
+        child = children[0]
+        self.assert_delayed(child, 2)
+        self.assertEqual(child.name, 'p1')
+        self.assertEqual(child.value, 'xx')
+
+    def test_defer_inheritance_pk_chaining(self):
+        """
+        When an inherited model is fetched from the DB, its PK is also fetched.
+        When getting the PK of the parent model it is useful to use the already
+        fetched parent model PK if it happens to be available. Tests that this
+        is done.
+        """
+        s1 = Secondary.objects.create(first="x1", second="y1")
+        bc = BigChild.objects.create(name="b1", value="foo", related=s1,
+                                     other="bar")
+        bc_deferred = BigChild.objects.only('name').get(pk=bc.pk)
+        with self.assertNumQueries(2):
+            bc_deferred.id
+        self.assertEqual(bc_deferred.pk, bc_deferred.id)
