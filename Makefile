@@ -18,3 +18,6 @@ test-composite:
 
 test-all-django:
 	djangotests/cruntests.py --settings="$(SETTINGS)" -v$(VERBOSITY)
+
+test-fails:
+	djangotests/cruntests.py --settings="$(SETTINGS)" -v$(VERBOSITY) indexes.IndexesTests forms.FieldsTests admin_scripts.StartProject composite_generic_relations.GenericRelationsTests known_related_objects.ExistingRelatedInstancesTests composite_defer.DeferTests
