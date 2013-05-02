@@ -105,7 +105,8 @@ def patched_model_init(self, *args, **kwargs):
     super(Model, self).__init__()
 
     # setup pk cache
-    self.pk
+    try: self.pk
+    except: pass # if foreignkeys are part of the pk
     
     signals.post_init.send(sender=self.__class__, instance=self)
 patched_model_init._sign = "composite"
