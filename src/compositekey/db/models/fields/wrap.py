@@ -1,3 +1,4 @@
+#-*- coding: UTF-8 -*-
 __author__ = 'aldaran'
 
 from compositekey.utils import *
@@ -21,9 +22,13 @@ def get_composite_pk(fields, name="pk"):
     cache_name="_composite_%s_cache" % name
     def _get(obj):
         # cache, if change the values you can yet identify thre real record
-        if not hasattr(obj, cache_name):
-            setattr(obj, cache_name, assemble_pk(*[f.get_prep_value(getattr(obj, f.name)) for f in fields]))
-        return getattr(obj, cache_name)
+        # TODO FRANKI: Si uno de los campos es un foreignkey no podemos hacer la busqueda relacional sobre None, así que try/except
+        try:
+            if not hasattr(obj, cache_name):
+                setattr(obj, cache_name, assemble_pk(*[f.get_prep_value(getattr(obj, f.name)) for f in fields]))
+            return getattr(obj, cache_name)
+        except:
+            return ""
     return _get
 
 
@@ -44,6 +49,10 @@ def set_composite_pk(fields, name="pk"):
         if len(values) <> len(fields):
             values = [None for _ in fields]
         for field, val in zip(fields, values):
+            try:
+                val = field.rel.to(pk=val)
+            except AttributeError:
+                pass
             setattr(obj, field.name, val)
         # reset pk cache only you are not deleting the model
         #if len(disassemble_pk(value)) == len(fields):

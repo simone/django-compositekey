@@ -65,10 +65,12 @@ class Atoms(object):
 
         raise TypeError('Invalid lookup_type: %r' % lookup_type)
 
+
 class MultiColumn(object):
     def __init__(self, fields):
         self.fields = fields
-        self.columns = [f.column for f in fields]
+        # TODO FRANKI: Hemos puesto que si no encuentra "column" asigne "db_column"
+        self.columns = [getattr(f, 'column', f.db_column) for f in fields]
 
     def as_sql(self, qn, connection):
         return MultipleColumnsIN(self.columns).inner_sql(qn, connection)
