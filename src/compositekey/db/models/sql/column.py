@@ -69,7 +69,7 @@ class Atoms(object):
 class MultiColumn(object):
     def __init__(self, fields):
         self.fields = fields
-        # TODO FRANKI: Hemos puesto que si no encuentra "column" asigne "db_column"
+        # Use "db_column" in case "column" is not found
         self.columns = [getattr(f, 'column', f.db_column) for f in fields]
 
     def as_sql(self, qn, connection):
