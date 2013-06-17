@@ -255,7 +255,7 @@ def wrap_update(original):
                         if f.name in pk_field_names:
                             # Establish the primery key value in case a foreign key tries to set one of the primary key fields to null
                             if len(self) != 1:
-                                raise Exception("El análisis realizado no contemplaba que puediera haber más de un artículo aquí o ninguno.")
+                                raise Exception("One single record was expected.")
                             v = getattr(self[0], f.name, None)
                         elif f.default is not None and f.default != NOT_PROVIDED:
                             # Make sure we take the default field value for the fields that compose the foreignkey
