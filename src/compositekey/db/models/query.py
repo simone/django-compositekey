@@ -1,5 +1,7 @@
+#-*- coding: utf8 -*-
 import logging
 from django.db import connections
+from django.db.models import NOT_PROVIDED
 
 from django.db.models.query import get_cached_row, get_klass_info, RawQuerySet
 from django.db.models.query_utils import InvalidQuery
@@ -60,6 +62,12 @@ class RawCompositeQuerySet(RawQuerySet):
                     model_init_field_pos.append(model_init_field_names[field.attname])
         if need_resolv_columns:
             fields = [self.model_fields.get(c, None) for c in self.columns]
+
+        # Virtual fields should not receive values from the query
+        for field in fields:
+            if not field.column:
+                fields.delete(column)
+
         # Begin looping through the query values.
         for values in query:
             if need_resolv_columns:
@@ -225,6 +233,7 @@ def vl_iterator(self):
             data = dict(zip(names, row))
             yield tuple([data[f] for f in fields])
 
+
 def wrap_update(original):
     def _update(self, _values):
         assert self.query.can_filter(), \
@@ -235,7 +244,25 @@ def wrap_update(original):
                 values[field.name] = (field, model, value)
             else:
                 for f, v in zip(field.fields, disassemble_pk(value, len(field.fields))):
+                    pk_field = f.model._meta.pk
+                    if not v:
+
+                        try:
+                            pk_field_names = pk_field._field_names
+                        except AttributeError:
+                            pk_field_names = []
+
+                        if f.name in pk_field_names:
+                            # Establish the primery key value in case a foreign key tries to set one of the primary key fields to null
+                            if len(self) != 1:
+                                raise Exception("One single record was expected.")
+                            v = getattr(self[0], f.name, None)
+                        elif f.default is not None and f.default != NOT_PROVIDED:
+                            # Make sure we take the default field value for the fields that compose the foreignkey
+                            v = f.default
+
                     values[f.name] = (f, model, v)
+
         return original(self, values.values())
     return _update
     _update.alters_data = True
