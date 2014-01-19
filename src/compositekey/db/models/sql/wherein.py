@@ -141,9 +141,17 @@ class UseTupleValues(UseTuple):
     DB2 (with values)
     """
     template = '%s IN (values %%s)'
+    
+class UseConcatCast(UseConcat):
+    """
+    MICROSOFT (SQL Server)
+    """
+    concat = "+"
+    cq = "CAST(%s%s AS NVARCHAR(MAX))"
 
 service["sqlite"] = UseConcat
 service["postgresql"] = UseConcatQuote
 service["mysql"] = UseTupleWithDummy
 service["oracle"] = UseTuple
 service["DB2"] = UseTupleValues
+service["microsoft"] = UseConcatCast
