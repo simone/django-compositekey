@@ -63,10 +63,10 @@ class RawCompositeQuerySet(RawQuerySet):
         if need_resolv_columns:
             fields = [self.model_fields.get(c, None) for c in self.columns]
 
-        # Virtual fields should not receive values from the query
-        for field in fields:
-            if not field.column:
-                fields.delete(column)
+            # Virtual fields should not receive values from the query
+            for field in fields:
+                if not field.column:
+                    fields.delete(column)
 
         # Begin looping through the query values.
         for values in query:
