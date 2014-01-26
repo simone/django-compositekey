@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name = "django-compositekey",
-    version = "1.5.0-alpha",
+    version = "1.5.0",
     url = 'https://github.com/simone/django-compositekey',
     author = 'Simone Federici',
     author_email = 's.federici@gmail.com',
