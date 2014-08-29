@@ -7,8 +7,8 @@ Allows to use Django with (legacy) databases that have composite multicolumn pri
 Version 1.6 is in development
 =============================
 
-For django 1.4.x compatibility checkout the 1.4.x branch
-For django 1.5.x compatibility checkout the 1.5.x branch
+ * For django 1.4.x compatibility checkout the 1.4.x branch
+ * For django 1.5.x compatibility checkout the 1.5.x branch
 
 
 Author
@@ -39,7 +39,7 @@ Checkout the Git Submodule containing Django:
 Update the Django clone to the version you want to test with:
 
     django-compositekey$ cd django_src
-    django-compositekey/django_src$ git checkout 1.4.3
+    django-compositekey/django_src$ git checkout stable/1.6
     django-compositekey$ cd ..
 
 Create a new [virtualenv](http://www.virtualenv.org/) for the project and activate it.
