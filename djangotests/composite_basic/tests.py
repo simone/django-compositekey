@@ -8,7 +8,7 @@ from django.test import TestCase, skipIfDBFeature, skipUnlessDBFeature
 from compositekey.utils import assemble_pk
 from django.utils import unittest
 
-from .djangotests.composite_basic.models import Article
+from .models import Article
 
 
 class ModelTest(TestCase):

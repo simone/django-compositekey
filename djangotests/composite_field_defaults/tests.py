@@ -4,7 +4,7 @@ from datetime import datetime
 
 from django.test import TestCase
 
-from .djangotests.composite_field_defaults.models import Article
+from .models import Article
 
 
 class DefaultTests(TestCase):

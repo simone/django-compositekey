@@ -10,6 +10,7 @@ def new_deferred_class_factory(model, attrs):
     if hasattr(model._meta, "composite_special_fields"):
         attrs = [attr for attr in attrs if attr not in [f.attname for f in model._meta.composite_special_fields]]
     return deferred_class_factory(model, attrs)
+new_deferred_class_factory.__safe_for_unpickling__ = True
 new_deferred_class_factory._sign = "monkey patch by compositekey"
 
 def activate_deferred_class_factory_monkey_patch():

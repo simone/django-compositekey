@@ -2,7 +2,7 @@
 
 from django.test import TestCase
 
-from .djangotests.composite_raw.models import *
+from .models import *
 from compositekey.utils import assemble_pk
 
 class TestRawQueries(TestCase):

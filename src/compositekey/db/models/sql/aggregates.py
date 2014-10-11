@@ -5,7 +5,8 @@ import logging
 log = logging.getLogger(__name__)
   
 def as_sql(self, qn, connection):
-    "Return the aggregate, rendered as SQL."
+    "Return the aggregate, rendered as SQL with parameters."
+    params = []
 
     class AggregateMulticolumn(object):
         def __init__(self, column, aliases=[]):
@@ -30,19 +31,19 @@ def as_sql(self, qn, connection):
         _col = AggregateMulticolumn(self.col) if hasattr(self.col, "columns") else self.col
 
     if hasattr(_col, 'as_sql'):
-        field_name = _col.as_sql(qn, connection)
-    elif isinstance(_col, (list, tuple)):
-        field_name = '.'.join([qn(c) for c in _col])
+        field_name, params = self.col.as_sql(qn, connection)
+    elif isinstance(self.col, (list, tuple)):
+        field_name = '.'.join([qn(c) for c in self.col])
     else:
-        field_name = _col
+        field_name = self.col
 
-    params = {
+    substitutions = {
         'function': self.sql_function,
         'field': field_name
     }
-    params.update(self.extra)
+    substitutions.update(self.extra)
 
-    return self.sql_template % params
+    return self.sql_template % substitutions, params
 as_sql._sign = "monkey patch by compositekey"
 
 def activate_as_sql_monkey_patch():

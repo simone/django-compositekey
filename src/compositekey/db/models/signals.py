@@ -8,6 +8,7 @@ import operator
 
 @receiver(class_prepared)
 def prepare_model_and_meta(sender, **kwargs):
+
     opts = sender._meta
     unique_together = []
     for field_constraints in opts.unique_together:
@@ -21,7 +22,6 @@ def prepare_model_and_meta(sender, **kwargs):
     # implement automatically the django natural keys
     # if is not yet implemented
     if getattr(sender._meta, "has_composite_primarykeys_field", False):
-        
         if not hasattr(sender, 'natural_key'):
             def natural_key(self):
                 return disassemble_pk(self.pk, len(self._meta.composite_primarykeys_field.fields))

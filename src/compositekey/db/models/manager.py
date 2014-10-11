@@ -27,4 +27,4 @@ def activate_insert_query_monkey_patch():
     if not hasattr(Manager._insert, "_sign"):
         log.debug("activate_insert_query_monkey_patch")
         Manager._insert, Manager.raw =  wrap_insert_query(Manager._insert)
-        
+

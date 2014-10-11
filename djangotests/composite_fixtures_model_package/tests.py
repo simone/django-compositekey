@@ -1,7 +1,7 @@
 from django.core import management
 from django.test import TestCase
 
-from .djangotests.composite_fixtures_model_package.models import Article, Book
+from .models import Article, Book
 
 
 class SampleTestCase(TestCase):

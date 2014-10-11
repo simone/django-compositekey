@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from django.core.exceptions import FieldError
 from django.test import TestCase
 
-from .djangotests.composite_custom_columns.models import Author, Article
+from .models import Author, Article
 
 
 class CustomColumnsTests(TestCase):

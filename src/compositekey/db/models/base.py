@@ -1,7 +1,7 @@
 __author__ = 'aldaran'
 
 from django.db.models import signals
-from django.db.models.base import ModelState, Model
+from django.db.models.base import ModelState, Model, ForeignObjectRel
 from django.db.models.fields.related import ManyToOneRel
 from django.db.models.query_utils import DeferredAttribute
 
@@ -23,12 +23,12 @@ def patched_model_init(self, *args, **kwargs):
     # The reason for the kwargs check is that standard iterator passes in by
     # args, and instantiation for iteration is 33% faster.
     args_len = len(args)
-    if args_len > len(self._meta.fields):
+    if args_len > len(self._meta.concrete_fields):
         # Daft, but matches old exception sans the err msg.
         raise IndexError("Number of args exceeds number of fields")
 
-    fields_iter = iter(self._meta.db_fields)
     if not kwargs:
+        fields_iter = iter(self._meta.concrete_fields)
         # The ordering of the zip calls matter - zip throws StopIteration
         # when an iter throws it. So if the first iter throws it, the second
         # is *not* consumed. We rely on this, so don't change the order
@@ -37,6 +37,7 @@ def patched_model_init(self, *args, **kwargs):
             setattr(self, field.attname, val)
     else:
         # Slower, kwargs-ready version.
+        fields_iter = iter(self._meta.fields)
         for val, field in zip(args, fields_iter):
             setattr(self, field.attname, val)
             kwargs.pop(field.name, None)
@@ -53,11 +54,12 @@ def patched_model_init(self, *args, **kwargs):
         # data-descriptor object (DeferredAttribute) without triggering its
         # __get__ method.
         if (field.attname not in kwargs and
-                isinstance(self.__class__.__dict__.get(field.attname), DeferredAttribute)):
+                (isinstance(self.__class__.__dict__.get(field.attname), DeferredAttribute)
+                or field.column is None)):
             # This field will be populated on request.
             continue
         if kwargs:
-            if isinstance(field.rel, ManyToOneRel):
+            if isinstance(field.rel, ForeignObjectRel):
                 try:
                     # Assume object instance was passed in.
                     rel_obj = kwargs.pop(field.name)
@@ -84,6 +86,7 @@ def patched_model_init(self, *args, **kwargs):
                     val = field.get_default()
         else:
             val = field.get_default()
+
         if is_related_object:
             # If we are passed a related instance, set it using the
             # field.name instead of field.attname (e.g. "user" instead of

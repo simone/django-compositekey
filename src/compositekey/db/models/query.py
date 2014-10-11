@@ -62,12 +62,6 @@ class RawCompositeQuerySet(RawQuerySet):
                     model_init_field_pos.append(model_init_field_names[field.attname])
         if need_resolv_columns:
             fields = [self.model_fields.get(c, None) for c in self.columns]
-
-            # Virtual fields should not receive values from the query
-            for field in fields:
-                if not field.column:
-                    fields.delete(column)
-
         # Begin looping through the query values.
         for values in query:
             if need_resolv_columns:
@@ -111,13 +105,13 @@ def iterator(self):
 
     only_load = self.query.get_loaded_field_names()
     if not fill_cache:
-        fields = self.model._meta.fields
+        fields = self.model._meta.concrete_fields
 
     load_fields = []
     # If only/defer clauses have been specified,
     # build the list of fields that are to be loaded.
     if only_load:
-        for field, model in self.model._meta.get_fields_with_model():
+        for field, model in self.model._meta.get_concrete_fields_with_model():
             if model is None:
                 model = self.model
             try:
@@ -130,7 +124,7 @@ def iterator(self):
                 load_fields.append(field.name)
 
     index_start = len(extra_select)
-    aggregate_start = index_start + len(load_fields or getattr(self.model._meta, "db_fields", self.model._meta.fields))
+    aggregate_start = index_start + len(load_fields or getattr(self.model._meta, "db_fields", self.model._meta.concrete_fields))
 
     skip = None
     if load_fields and not fill_cache:
@@ -178,16 +172,19 @@ def iterator(self):
             for i, aggregate in enumerate(aggregate_select):
                 setattr(obj, aggregate, row[i + aggregate_start])
 
-            # Add the known related objects to the model, if there are any
-            if self._known_related_objects:
-                for field, rel_objs in self._known_related_objects.items():
-                    pk = getattr(obj, field.get_attname())
-                    try:
-                        rel_obj = rel_objs[pk]
-                    except KeyError:
-                        pass               # may happen in qs1 | qs2 scenarios
-                    else:
-                        setattr(obj, field.name, rel_obj)
+        # Add the known related objects to the model, if there are any
+        if self._known_related_objects:
+            for field, rel_objs in self._known_related_objects.items():
+                # Avoid overwriting objects loaded e.g. by select_related
+                if hasattr(obj, field.get_cache_name()):
+                    continue
+                pk = getattr(obj, field.get_attname())
+                try:
+                    rel_obj = rel_objs[pk]
+                except KeyError:
+                    pass               # may happen in qs1 | qs2 scenarios
+                else:
+                    setattr(obj, field.name, rel_obj)
 
         yield obj
 iterator._sign = "monkey patch by compositekey"
@@ -264,8 +261,9 @@ def wrap_update(original):
                     values[f.name] = (f, model, v)
 
         return original(self, values.values())
-    return _update
     _update.alters_data = True
+    return _update
+
 
 def activate_iterator_monkey_patch():
     from django.db.models.query import QuerySet, ValuesQuerySet, ValuesListQuerySet

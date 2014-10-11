@@ -5,7 +5,7 @@ from compositekey.utils import assemble_pk
 from django.db import transaction, IntegrityError
 from django.test import TestCase, skipIfDBFeature
 
-from .djangotests.composite_custom_pk.models import Employee, Business, Bar, Foo
+from .models import Employee, Business, Bar, Foo
 
 
 class CustomPKTests(TestCase):

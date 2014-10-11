@@ -4,7 +4,7 @@ from django.core.exceptions import FieldError
 from django.db.models import F
 from django.test import TestCase
 
-from .djangotests.composite_expressions.models import Company, Employee
+from .models import Company, Employee
 
 
 class ExpressionsTests(TestCase):

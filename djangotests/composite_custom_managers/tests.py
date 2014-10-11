@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from django.test import TestCase
 
-from .djangotests.composite_custom_managers.models import Person, Book, Car, PersonManager, PublishedBookManager
+from .models import Person, Book, Car, PersonManager, PublishedBookManager
 
 
 class CustomManagerTests(TestCase):

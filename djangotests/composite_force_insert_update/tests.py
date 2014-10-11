@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from django.db import transaction, IntegrityError, DatabaseError
 from django.test import TestCase
 
-from .djangotests.composite_force_insert_update.models import (Counter, WithCustomPK, InheritedCounter, ProxyCounter,
+from .models import (Counter, WithCustomPK, InheritedCounter, ProxyCounter,
                      SubCounter)
 
 

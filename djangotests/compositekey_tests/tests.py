@@ -10,7 +10,7 @@ from django.test import TestCase
 from django.forms.models import modelformset_factory, inlineformset_factory
 from compositekey.utils import *
 
-from .djangotests.compositekey.models import *
+from .models import *
 
 class ModelTest(TestCase):
 
@@ -344,7 +344,7 @@ class FormTest(TestCase):
 
 
     def test_admin_inline(self):
-        from .djangotests.compositekey.admin import ChapterInline, site
+        from .admin import ChapterInline, site
         u = User(is_superuser=True)
         class R(object):
             user = User(is_superuser=True)

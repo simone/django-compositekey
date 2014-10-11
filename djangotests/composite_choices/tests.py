@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from django.test import TestCase
 
-from .djangotests.composite_choices.models import Person
+from .models import Person
 
 
 class ChoicesTests(TestCase):

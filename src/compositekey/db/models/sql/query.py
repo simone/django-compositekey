@@ -6,6 +6,7 @@ from django.db.models.constants import LOOKUP_SEP
 from django.core.exceptions import FieldError
 from django.db.models.sql.datastructures import MultiJoin
 from django.db.models.sql.query import Query
+from django.db.models.sql.constants import SelectInfo
 
 log = logging.getLogger(__name__)
 
@@ -19,23 +20,21 @@ def add_fields(self, field_names, allow_m2m=True):
 
     try:
         for name in field_names:
-            field, target, u2, joins, u3, u4 = self.setup_joins(
-                    name.split(LOOKUP_SEP), opts, alias, False, allow_m2m,
-                    True)
-            final_alias = joins[-1]
-            col = target.column
-            cols = [] if hasattr(col, "columns") else [col]
-            for col in cols:
-                if len(joins) > 1:
-                    join = self.alias_map[final_alias]
-                    if col == join.rhs_join_col:
-                        self.unref_alias(final_alias)
-                        final_alias = join.lhs_alias
-                        col = join.lhs_join_col
-                        joins = joins[:-1]
-                self.promote_joins(joins[1:])
-                self.select.append((final_alias, col))
-                self.select_fields.append(field)
+            field, targets, u2, joins, path = self.setup_joins(
+                    name.split(LOOKUP_SEP), opts, alias, None, allow_m2m,
+                    allow_explicit_fk=True, outer_if_first=True)
+
+            # Trim last join if possible
+            targets, final_alias, remaining_joins = self.trim_joins(targets, joins[-2:], path)
+            joins = joins[:-2] + remaining_joins
+
+            self.promote_joins(joins[1:])
+            for target in targets:
+                col = target.column
+                cols = [] if hasattr(col, "columns") else [col]
+                for col in cols:
+                    print "select", final_alias, col, target
+                    self.select.append(SelectInfo((final_alias, col), target))
     except MultiJoin:
         raise FieldError("Invalid field name: '%s'" % name)
     except FieldError:

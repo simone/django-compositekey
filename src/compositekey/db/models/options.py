@@ -8,9 +8,10 @@ from django.db.models.options import Options
 
 log = logging.getLogger(__name__)
 
-def get_fields_with_model(self):
-    return [(field, model) for field, model in self._get_fields_with_model() if not getattr(field, "not_in_db", False)]
-get_fields_with_model._sign = "activate_get_fields_with_model_monkey_patch"
+def get_concrete_fields_with_model(self):
+    return [(field, model) for field, model in self._get_fields_with_model() if
+            field.column is not None or not getattr(field, "not_in_db", False)]
+get_concrete_fields_with_model._sign = "activate_get_concrete_fields_with_model_monkey_patch"
 
 def init_name_map(self):
     """
@@ -27,6 +28,9 @@ def init_name_map(self):
         cache[f.name] = (f, model, True, True)
     for f, model in self._get_fields_with_model():
         cache[f.name] = (f, model, True, False)
+    for f in self.virtual_fields:
+        if hasattr(f, 'related'):
+            cache[f.name] = (f.related, None if f.model == self.model else f.model, True, False)
     if app_cache_ready():
         self._name_map = cache
     return cache
@@ -54,7 +58,7 @@ def activate_get_fields_with_model_monkey_patch():
     if not hasattr(Options.get_fields_with_model, "_sign"):
         log.debug("activate_get_fields_with_model_monkey_patch")
         Options._get_fields_with_model = Options.get_fields_with_model
-        Options.get_fields_with_model = get_fields_with_model
+        Options.get_fields_with_model = get_concrete_fields_with_model
         Options.init_name_map = init_name_map
         Options._fill_fields_cache = _fill_fields_cache
 

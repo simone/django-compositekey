@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from django.db.models.query_utils import DeferredAttribute, InvalidQuery
 from django.test import TestCase
 
-from .djangotests.composite_defer.models import Secondary, Primary, Child, BigChild, ChildProxy
+from .models import Secondary, Primary, Child, BigChild, ChildProxy
 
 
 class DeferTests(TestCase):

@@ -7,7 +7,7 @@ from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.utils import unittest
 
-from .djangotests.composite_generic_relations.models import (TaggedItem, ValuableTaggedItem, Comparison, Animal,
+from .models import (TaggedItem, ValuableTaggedItem, Comparison, Animal,
     Vegetable, Mineral, Gecko)
 
 class GenericRelationsTests(TestCase):

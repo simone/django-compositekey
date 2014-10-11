@@ -1,7 +1,7 @@
 __author__ = 'aldaran'
 
 from django.contrib import admin
-from .djangotests.compositekey.models import *
+from .models import *
 
 class ChapterAdmin(admin.ModelAdmin):
     list_filter = ("book__name", "book__author",)

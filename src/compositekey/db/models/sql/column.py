@@ -75,7 +75,7 @@ class MultiColumn(object):
     def as_sql(self, qn, connection):
         return MultipleColumnsIN(self.columns).inner_sql(qn, connection)
 
-    def sql_for_columns(self, data, qn, connection):
+    def sql_for_columns(self, data, qn, connection, internal_type=None):
         """
         "WHERE ...
         T1.foo = 6.
@@ -86,9 +86,9 @@ class MultiColumn(object):
         fun = connection.ops.field_cast_sql
 
         if table_alias:
-            lhs = [fun(f.db_type(connection)) % '%s.%s' % (qn(table_alias), qn(f.column)) for f in self.fields]
+            lhs = [fun(f.db_type(connection), internal_type) % '%s.%s' % (qn(table_alias), qn(f.column)) for f in self.fields]
         else:
-            lhs = [fun(f.db_type(connection)) % qn(f.column) for f in self.fields]
+            lhs = [fun(f.db_type(connection), internal_type) % qn(f.column) for f in self.fields]
         return Atoms(self.fields, lhs)
 
     def __repr__(self):

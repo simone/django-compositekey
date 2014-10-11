@@ -17,12 +17,14 @@ def sequence_list(self):
         for model in models.get_models(app):
             if not model._meta.managed:
                 continue
+            if model._meta.swapped:
+                continue
             if not router.allow_syncdb(self.connection.alias, model):
                 continue
             for f in model._meta.local_fields:
                 if not getattr(f, "not_in_db", False) and isinstance(f, models.AutoField):
                     sequence_list.append({'table': model._meta.db_table, 'column': f.column})
-                    break # Only one AutoField is allowed per model, so don't bother continuing.
+                    break  # Only one AutoField is allowed per model, so don't bother continuing.
 
             for f in model._meta.local_many_to_many:
                 # If this is an m2m using an intermediate table,

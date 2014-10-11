@@ -53,8 +53,8 @@ def wrap_model_to_dict(original_model_to_dict):
         from django.db.models.fields.related import ManyToManyField
         data = {}
         # hack added composite_foreignkeys_fields
-        for f in opts.fields + opts.many_to_many + opts.composite_special_fields:
-            if not f.editable:
+        for f in opts.concrete_fields + opts.virtual_fields + opts.many_to_many + opts.composite_special_fields:
+            if not getattr(f, 'editable', False):
                 continue
             if fields and not f.name in fields:
                 continue
@@ -77,7 +77,36 @@ def wrap_model_to_dict(original_model_to_dict):
 
 
 def wrap_fields_for_model(original_fields_for_model):
-    def fields_for_model(model, fields=None, exclude=None, widgets=None, formfield_callback=None):
+
+    ALL_FIELDS = '__all__'
+
+    def fields_for_model(model, fields=None, exclude=None, widgets=None,
+                     formfield_callback=None, localized_fields=None,
+                     labels=None, help_texts=None, error_messages=None):
+        """
+        Returns a ``SortedDict`` containing form fields for the given model.
+
+        ``fields`` is an optional list of field names. If provided, only the named
+        fields will be included in the returned fields.
+
+        ``exclude`` is an optional list of field names. If provided, the named
+        fields will be excluded from the returned fields, even if they are listed
+        in the ``fields`` argument.
+
+        ``widgets`` is a dictionary of model field names mapped to a widget.
+
+        ``localized_fields`` is a list of names of fields which should be localized.
+
+        ``labels`` is a dictionary of model field names mapped to a label.
+
+        ``help_texts`` is a dictionary of model field names mapped to a help text.
+
+        ``error_messages`` is a dictionary of model field names mapped to a
+        dictionary of error messages.
+
+        ``formfield_callback`` is a callable that takes a model field and returns
+        a form field.
+        """
         opts = model._meta
 
         if not getattr(opts, "enable_composite", False):
@@ -86,18 +115,31 @@ def wrap_fields_for_model(original_fields_for_model):
         # todo: maybe is possible don't rewrite all function
         field_list = []
         ignored = []
+
+        # Avoid circular import
+        from django.db.models.fields import Field as ModelField
+        sortable_virtual_fields = [f for f in opts.virtual_fields
+                                   if isinstance(f, ModelField)]
         # hack added composite_foreignkeys_fields
-        for f in sorted(opts.fields + opts.many_to_many + opts.composite_special_fields):
-            if not f.editable:
+        for f in sorted(opts.concrete_fields + sortable_virtual_fields + opts.many_to_many + opts.composite_special_fields):
+            if not getattr(f, 'editable', False):
                 continue
             if fields is not None and not f.name in fields:
                 continue
             if exclude and f.name in exclude:
                 continue
+
+            kwargs = {}
             if widgets and f.name in widgets:
-                kwargs = {'widget': widgets[f.name]}
-            else:
-                kwargs = {}
+                kwargs['widget'] = widgets[f.name]
+            if localized_fields == ALL_FIELDS or (localized_fields and f.name in localized_fields):
+                kwargs['localize'] = True
+            if labels and f.name in labels:
+                kwargs['label'] = labels[f.name]
+            if help_texts and f.name in help_texts:
+                kwargs['help_text'] = help_texts[f.name]
+            if error_messages and f.name in error_messages:
+                kwargs['error_messages'] = error_messages[f.name]
 
             if formfield_callback is None:
                 formfield = f.formfield(**kwargs)
