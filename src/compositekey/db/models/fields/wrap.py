@@ -24,7 +24,7 @@ def get_composite_pk(fields, name="pk"):
         # cache, if change the values you can yet identify thre real record
         # If one of the fields is a foreignkey we cannot make the relational search over None, so try/except
         try:
-            if not hasattr(obj, cache_name):
+            if not hasattr(obj, cache_name) or not getattr(obj, cache_name):
                 setattr(obj, cache_name, assemble_pk(*[f.get_prep_value(getattr(obj, f.name)) for f in fields]))
             return getattr(obj, cache_name)
         except:
